@@ -1,0 +1,14 @@
+*.pyc
+*.*~
+*.swp
+
+**/.vscode
+**/__pycache__
+
+**.cache
+**.ip_user_files
+**.sim
+**.runs
+**rundir
+**.Xil
+**vivado_synth
