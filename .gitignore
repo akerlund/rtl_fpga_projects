@@ -12,3 +12,7 @@
 **rundir
 **.Xil
 **vivado_synth
+**vivado.jou
+**vivado.log
+**vivado_pid*
+
