@@ -1,0 +1,5 @@
+submodules/rtl_common_design/synchronizers/io_synchronizer_core.sv
+submodules/rtl_common_design/synchronizers/io_synchronizer.sv
+submodules/rtl_common_design/mechanics/button_core.sv
+components/arty_z7_buttons/rtl/buttons_top.sv
+projects/arty_z7_pl_blink_led/rtl/project_top.sv
