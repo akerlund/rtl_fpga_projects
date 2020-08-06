@@ -5,7 +5,7 @@ set file_list_path  "$project_path/synth_file_list.lst"
 
 # Synthesis settings
 set top_module_name      "project_top"
-set fpga_part            "7z020clg484-1"
+set fpga_part            "xc7z020clg400-1"
 set defines              ""
 set inc_dirs             ""
 set mode                 "default"

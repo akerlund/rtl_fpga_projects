@@ -75,4 +75,4 @@ report_route_status   -file  $report_dir/post_route_status.rpt
 report_timing_summary -file  $report_dir/post_route_timing_summary.rpt
 report_drc            -file  $report_dir/post_imp_drc.rpt
 
-write_bitstream $top_module_name
+write_bitstream -force $top_module_name.bit
