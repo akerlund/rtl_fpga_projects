@@ -36,35 +36,47 @@ module arty_z7_buttons_top (
     output logic btn_3_tgl
   );
 
+  localparam int NR_OF_DEBOUNCE_CLKS_C = 1000000;
+  localparam     CONNECTION_TYPE_C     = "OPEN";
 
-  button_core button_core_i0 (
-    .clk                 ( clk       ),
-    .rst_n               ( rst_n     ),
-    .button_in_pin       ( btn_0     ),
-    .button_press_toggle ( btn_0_tgl )
+  button_core #(
+    .NR_OF_DEBOUNCE_CLKS_P ( NR_OF_DEBOUNCE_CLKS_C ),
+    .CONNECTION_TYPE_P     ( CONNECTION_TYPE_C     )
+  ) button_core_i0 (
+    .clk                   ( clk                   ), // input
+    .rst_n                 ( rst_n                 ), // input
+    .button_in_pin         ( btn_0                 ), // input
+    .button_press_toggle   ( btn_0_tgl             )  // output
   );
 
-  // Buttons
-  button_core button_core_i1 (
-    .clk                 ( clk       ),
-    .rst_n               ( rst_n     ),
-    .button_in_pin       ( btn_1     ),
-    .button_press_toggle ( btn_1_tgl )
+  button_core #(
+    .NR_OF_DEBOUNCE_CLKS_P ( NR_OF_DEBOUNCE_CLKS_C ),
+    .CONNECTION_TYPE_P     ( CONNECTION_TYPE_C     )
+  ) button_core_i1 (
+    .clk                   ( clk                   ), // input
+    .rst_n                 ( rst_n                 ), // input
+    .button_in_pin         ( btn_1                 ), // input
+    .button_press_toggle   ( btn_1_tgl             )  // output
   );
 
-
-  button_core button_core_i2 (
-    .clk                 ( clk       ),
-    .rst_n               ( rst_n     ),
-    .button_in_pin       ( btn_2     ),
-    .button_press_toggle ( btn_2_tgl )
+  button_core #(
+    .NR_OF_DEBOUNCE_CLKS_P ( NR_OF_DEBOUNCE_CLKS_C ),
+    .CONNECTION_TYPE_P     ( CONNECTION_TYPE_C     )
+  ) button_core_i2 (
+    .clk                   ( clk                   ), // input
+    .rst_n                 ( rst_n                 ), // input
+    .button_in_pin         ( btn_2                 ), // input
+    .button_press_toggle   ( btn_2_tgl             )  // output
   );
 
-  button_core button_core_i3 (
-    .clk                 ( clk       ),
-    .rst_n               ( rst_n     ),
-    .button_in_pin       ( btn_3     ),
-    .button_press_toggle ( btn_3_tgl )
+  button_core #(
+    .NR_OF_DEBOUNCE_CLKS_P ( NR_OF_DEBOUNCE_CLKS_C ),
+    .CONNECTION_TYPE_P     ( CONNECTION_TYPE_C     )
+  ) button_core_i3 (
+    .clk                   ( clk                   ), // input
+    .rst_n                 ( rst_n                 ), // input
+    .button_in_pin         ( btn_3                 ), // input
+    .button_press_toggle   ( btn_3_tgl             )  // output
   );
 
 endmodule

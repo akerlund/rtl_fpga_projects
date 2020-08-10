@@ -1,7 +1,33 @@
+################################################################################
+##
+## Copyright (C) 2020 Fredrik Åkerlund
+##
+## This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <https://www.gnu.org/licenses/>.
+##
+## Description:
+##
+################################################################################
 
-proc setup_project { _git_root   _project_name  _rundir         _fpga_part \
-                     _board_part _file_list     _xip_properties _ip_interfaces \
-                    _constraints _fclk_freq_mhz _bd_design_name } {
+# ------------------------------------------------------------------------------
+# Description:
+#   The main procedure which creates a Xilinx Hardware Design from a
+#   ZynQ RTL project. The resulting .xsa (Xilinx Support Archive) is used in a
+#   Xilinx Vitis software project and contains the implemented bit file.
+# ------------------------------------------------------------------------------
+proc build_zynq { _git_root    _project_name  _rundir         _fpga_part \
+                  _board_part  _file_list     _xip_properties _ip_interfaces \
+                  _constraints _fclk_freq_mhz _bd_design_name } {
 
   puts "INFO \[project\] Creating a Vivado project"
 
@@ -67,22 +93,26 @@ proc setup_project { _git_root   _project_name  _rundir         _fpga_part \
 }
 
 
-
+# ------------------------------------------------------------------------------
+# Description:
+#   Adds verilog files to a project which are read from a file list.
+#   A regular expression is used to sort out commented (#) and empty lines.
+# ------------------------------------------------------------------------------
 proc add_verilog_files {_git_root _file_list} {
 
 
-  puts "INFO \[project\] Reading file list ($_file_list)"
+  puts "INFO \[add_verilog_files\] Reading file list ($_file_list)"
   # Reading the System Verilog files
   set _file_ref  [open $_file_list r]
   set _file_data [read $_file_ref]
   close $_file_ref
 
-  puts "INFO \[project\] Parsing file list"
+  puts "INFO \[add_verilog_files\] Parsing file list"
   # Parsing out the System Verilog file paths
   set _sv_files [split $_file_data "\n"]
 
 
-  puts "INFO \[project\] Found ([llength $_sv_files]) files"
+  puts "INFO \[add_verilog_files\] Found ([llength $_sv_files]) files"
 
   variable _verilog_files
 
@@ -121,7 +151,7 @@ proc add_verilog_files {_git_root _file_list} {
 # ------------------------------------------------------------------------------
 proc create_ip {_git_root _rundir _xip_properties _ip_interfaces} {
 
-  puts "INFO \[ip_auto\] Creating IP"
+  puts "INFO \[create_ip\] Creating IP"
 
   ipx::package_project    -root_dir "$_rundir/packed_ip" -taxonomy "/UserIP" -import_files -set_current false -force
   ipx::unload_core        $_rundir/packed_ip/component.xml
@@ -158,7 +188,7 @@ proc create_ip {_git_root _rundir _xip_properties _ip_interfaces} {
 # ------------------------------------------------------------------------------
 proc set_ip_properties {_xip_properties} {
 
-  puts "INFO \[ip_auto\] Setting the IP's properties"
+  puts "INFO \[set_ip_properties\] Setting the IP's properties"
 
   set_property CORE_REVISION 2 [ipx::current_core]
 
@@ -167,42 +197,42 @@ proc set_ip_properties {_xip_properties} {
     set_property VENDOR              [dict get $_xip_properties ip_vendor] [ipx::current_core]
     set_property VENDOR_DISPLAY_NAME [dict get $_xip_properties ip_vendor] [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property VENDOR not provided"
+    puts "INFO \[set_ip_properties\] Property VENDOR not provided"
   }
 
   # Library
   if {[dict exists $_xip_properties ip_library]} {
     set_property LIBRARY      [dict get $_xip_properties ip_library]       [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property LIBRARY not provided"
+    puts "INFO \[set_ip_properties\] Property LIBRARY not provided"
   }
 
   # Name
   if {[dict exists $_xip_properties ip_name]} {
     set_property NAME         [dict get $_xip_properties ip_name]          [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property NAME not provided"
+    puts "INFO \[set_ip_properties\] Property NAME not provided"
   }
 
   # Version
   if {[dict exists $_xip_properties ip_version]} {
     set_property VERSION      [dict get $_xip_properties ip_version]       [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property VERSION not provided"
+    puts "INFO \[set_ip_properties\] Property VERSION not provided"
   }
 
   # Display name
   if {[dict exists $_xip_properties ip_display_name]} {
     set_property DISPLAY_NAME [dict get $_xip_properties ip_display_name]  [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property DISPLAY_NAME not provided"
+    puts "INFO \[set_ip_properties\] Property DISPLAY_NAME not provided"
   }
 
   # Description
   if {[dict exists $_xip_properties ip_description]} {
     set_property DESCRIPTION  [dict get $_xip_properties ip_description]   [ipx::current_core]
   } else {
-    puts "INFO \[ip_auto\] Property DESCRIPTION not provided"
+    puts "INFO \[set_ip_properties\] Property DESCRIPTION not provided"
   }
 
 }
@@ -214,18 +244,18 @@ proc set_ip_properties {_xip_properties} {
 # ------------------------------------------------------------------------------
 proc set_ip_interfaces {_ip_interfaces} {
 
-  puts "INFO \[ip_auto\] Setting up the IP's clock interface(s)"
+  puts "INFO \[set_ip_interfaces\] Setting up the IP's clock interface(s)"
   foreach _clk [dict get $_ip_interfaces clocks] {
     ipx::infer_bus_interface [dict get $_clk name] xilinx.com:signal:clock_rtl:1.0 [ipx::current_core]
   }
 
-  puts "INFO \[ip_auto\] Setting up the IP's reset interface(s)"
+  puts "INFO \[set_ip_interfaces\] Setting up the IP's reset interface(s)"
   foreach _rst [dict get $_ip_interfaces resets] {
     ipx::infer_bus_interface $_rst xilinx.com:signal:reset_rtl:1.0 [ipx::current_core]
 
   }
 
-  puts "INFO \[ip_auto\] Setting up the IP's data I/O interface(s)"
+  puts "INFO \[set_ip_interfaces\] Setting up the IP's data I/O interface(s)"
   foreach _io [dict get $_ip_interfaces data_io] {
     ipx::infer_bus_interface [dict get $_io name] xilinx.com:signal:data_rtl:1.0 [ipx::current_core]
   }
@@ -239,7 +269,7 @@ proc set_ip_interfaces {_ip_interfaces} {
 # ------------------------------------------------------------------------------
 proc set_ip_clk_frequency {_ip_clocks} {
 
-  puts "INFO \[ip_auto\] Setting up the IP's ([llength $_ip_clocks]) clock frequency(s)"
+  puts "INFO \[set_ip_clk_frequency\] Setting up the IP's ([llength $_ip_clocks]) clock frequency(s)"
 
   foreach _clk $_ip_clocks {
     ipx::add_bus_parameter FREQ_HZ [ipx::get_bus_interfaces [dict get $_clk name] -of_objects [ipx::current_core]]
@@ -255,7 +285,7 @@ proc set_ip_clk_frequency {_ip_clocks} {
 # ------------------------------------------------------------------------------
 proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_design_name} {
 
-  puts "INFO \[project\] Creating block design"
+  puts "INFO \[create_block_design\] Creating block design"
 
   set _xip_vendor     [dict get $_xip_properties ip_vendor]
   set _xip_ip_library [dict get $_xip_properties ip_library]
@@ -286,10 +316,13 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
 }
 
 
-
+# ------------------------------------------------------------------------------
+# Description:
+#   Creates an HDL wrapper of a block design
+# ------------------------------------------------------------------------------
 proc create_wrapper {_rundir _project_name _bd_design_name} {
 
-  puts "INFO \[project\] Create wrapper and synthesize"
+  puts "INFO \[create_wrapper\] Create wrapper and synthesize"
 
   make_wrapper -files    [get_files $_rundir/$_project_name/$_project_name.srcs/sources_1/bd/$_bd_design_name/$_bd_design_name.bd] -top
   add_files    -norecurse $_rundir/$_project_name/$_project_name.srcs/sources_1/bd/$_bd_design_name/hdl/${_bd_design_name}_wrapper.v
@@ -297,26 +330,38 @@ proc create_wrapper {_rundir _project_name _bd_design_name} {
 }
 
 
-
+# ------------------------------------------------------------------------------
+# Description:
+#   Generated files produced for an IP customization. They can include HDL,
+#   constraints, and simulation targets. During output product generation, the
+#   Vivado tools store IP customizations in the XCI file and uses the XCI file
+#   to produce the files used during synthesis and simulation.
+# ------------------------------------------------------------------------------
 proc generate_output_products {_rundir _project_name _bd_design_name} {
 
-  puts "INFO \[project\] Generating output products"
+  puts "INFO \[generate_output_products\] Generating output products"
 
   generate_target      all         [get_files $_rundir/$_project_name/$_project_name.srcs/sources_1/bd/$_bd_design_name/$_bd_design_name.bd]
   export_ip_user_files -of_objects [get_files $_rundir/$_project_name/$_project_name.srcs/sources_1/bd/$_bd_design_name/$_bd_design_name.bd] -no_script -sync -force -quiet
 }
 
 
-
+# ------------------------------------------------------------------------------
+# Description:
+#   Exports the hardware specification required for Xilinx Vitis
+# ------------------------------------------------------------------------------
 proc export_hardware {_rundir _project_name _bd_design_name} {
 
-  puts "INFO \[project\] Exporting hardware as .xsa file"
+  puts "INFO \[export_hardware\] Exporting hardware as .xsa file"
 
   set_property pfm_name {} [get_files -all $_rundir/$_project_name/$_project_name.srcs/sources_1/bd/$_bd_design_name/$_bd_design_name.bd]
   write_hw_platform -fixed -include_bit -force -file $_rundir/$_project_name/${_bd_design_name}_wrapper.xsa
 }
 
 
+# ------------------------------------------------------------------------------
+# Description:
+# ------------------------------------------------------------------------------
 set _git_root             [exec git rev-parse --show-toplevel]
 
 set _project_name         "vivado_script_project"
@@ -346,13 +391,13 @@ set _constraints [dict create                   \
 ]
 
 
-set _xip_properties [dict create \
-  ip_vendor       "aerland.se" \
+set _xip_properties [dict create   \
+  ip_vendor       "aerland.se"     \
   ip_library      "aerland_ip_lib" \
-  ip_name         "project_top" \
-  ip_version      "1.0" \
-  ip_display_name "project_top" \
-  ip_description  "ip_testing" \
+  ip_name         "project_top"    \
+  ip_version      "1.0"            \
+  ip_display_name "project_top"    \
+  ip_description  "ip_testing"     \
 ]
 
 set _ip_interfaces [dict create                          \
@@ -384,34 +429,6 @@ file mkdir             $_rundir
 set _current_directory [pwd]
 cd $_rundir
 
-setup_project $_git_root $_project_name $_rundir $_fpga_part $_board_part $_file_list $_xip_properties $_ip_interfaces $_constraints $_fclk_freq_mhz $_bd_design_name
+build_zynq $_git_root $_project_name $_rundir $_fpga_part $_board_part $_file_list $_xip_properties $_ip_interfaces $_constraints $_fclk_freq_mhz $_bd_design_name
 
 cd $_current_directory
-
-
-
-
-
-
-
-
-# set base_dir [get_property DIRECTORY [current_project]]
-# set prj_name [get_property NAME [current_project]]
-
-# # Reset BD
-# reset_target all [get_files -filter {IS_GENERATED == 0} *.bd]
-
-# # Delete IP files
-# exec rm -Rf $base_dir/${prj_name}.srcs/sources_1/ipshared
-# exec rm -Rf $base_dir/${prj_name}.ip_user_files
-
-# # Reset IP instances
-# reset_target all [get_files  $base_dir/${prj_name}.srcs/sources_1/ip/*.xci]
-# export_ip_user_files -of_objects  [get_files  $base_dir/${prj_name}.srcs/sources_1/ip/*.xci] -sync -no_script -force -quiet
-
-# # Generate targets
-# generate_target all [get_files -filter {IS_GENERATED == 0} *.bd]
-# generate_target all [get_files  $base_dir/${prj_name}.srcs/sources_1/ip/*.xci]
-
-# # Update ip catalog
-# update_ip_catalog -rebuild
