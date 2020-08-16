@@ -16,7 +16,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-// Description: This is a System Verilog version of Arthur's original work.
+// Description:
+//
+// This is a System Verilog version of Arthur's original work.
 // AXI-Stream I2S controller intended for use with Pmod I2S2. Generates clocks
 // and select signals required to place each of the ICs on the Pmod I2S2 into
 // slave mode. Data is 24-bit, left aligned, shifted one serial clock right from
@@ -33,7 +35,7 @@
 
 `default_nettype none
 
-module pmod_i2s2 (
+module i2s2_cs5343 (
 
     input  wire           clk_mclk, // Required to be approximately 22.591MHz
     input  wire           rst_n,
