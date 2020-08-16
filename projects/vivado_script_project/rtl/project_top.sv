@@ -22,13 +22,18 @@
 `default_nettype none
 
 module project_top #(
-    parameter integer C_S00_AXI_DATA_WIDTH = 32,
-    parameter integer C_S00_AXI_ADDR_WIDTH = 7
+    parameter int AXI_ID_WIDTH_P   = 32,
+    parameter int AXI_ADDR_WIDTH_P = 7,
+    parameter int AXI_DATA_WIDTH_P = 32
   )(
 
     // Clock and reset
     input  wire                                   clk,
     input  wire                                   rst_n,
+
+    // ---------------------------------------------------------------------------
+    // PL I/O
+    // ---------------------------------------------------------------------------
 
     // Arty Z7 LEDS
     output logic                                  led_0,
@@ -42,57 +47,147 @@ module project_top #(
     input  wire                                   btn_2,
     input  wire                                   btn_3,
 
-
     // ---------------------------------------------------------------------------
-    // AXI register ports
+    // PL register AXI4 ports
     // ---------------------------------------------------------------------------
-
-    // Clock and reset
-    input  wire                                   s00_axi_aclk,
-    input  wire                                   s00_axi_aresetn,
 
     // Write Address Channel
-    input  wire      [C_S00_AXI_ADDR_WIDTH-1 : 0] s00_axi_awaddr,
-    input  wire                           [2 : 0] s00_axi_awprot,
-    input  wire                                   s00_axi_awvalid,
-    output logic                                  s00_axi_awready,
+    input  wire          [AXI_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
+    input  wire                           [2 : 0] cfg_awprot,
+    input  wire                                   cfg_awvalid,
+    output logic                                  cfg_awready,
 
     // Write Data Channel
-    input  wire      [C_S00_AXI_DATA_WIDTH-1 : 0] s00_axi_wdata,
-    input  wire  [(C_S00_AXI_DATA_WIDTH/8)-1 : 0] s00_axi_wstrb,
-    input  wire                                   s00_axi_wvalid,
-    output logic                                  s00_axi_wready,
+    input  wire          [AXI_DATA_WIDTH_P-1 : 0] cfg_wdata,
+    input  wire      [(AXI_DATA_WIDTH_P/8)-1 : 0] cfg_wstrb,
+    input  wire                                   cfg_wvalid,
+    output logic                                  cfg_wready,
 
     // Write Response Channel
-    output logic                          [1 : 0] s00_axi_bresp,
-    output logic                                  s00_axi_bvalid,
-    input  wire                                   s00_axi_bready,
+    output logic                          [1 : 0] cfg_bresp,
+    output logic                                  cfg_bvalid,
+    input  wire                                   cfg_bready,
 
     // Read Address Channel
-    input  wire      [C_S00_AXI_ADDR_WIDTH-1 : 0] s00_axi_araddr,
-    input  wire                           [2 : 0] s00_axi_arprot,
-    input  wire                                   s00_axi_arvalid,
-    output logic                                  s00_axi_arready,
+    input  wire          [AXI_ADDR_WIDTH_P-1 : 0] cfg_araddr,
+    input  wire                           [2 : 0] cfg_arprot,
+    input  wire                                   cfg_arvalid,
+    output logic                                  cfg_arready,
 
     // Read Data Channel
-    output logic     [C_S00_AXI_DATA_WIDTH-1 : 0] s00_axi_rdata,
-    output logic                          [1 : 0] s00_axi_rresp,
-    output logic                                  s00_axi_rvalid,
-    input  wire                                   s00_axi_rready
+    output logic         [AXI_DATA_WIDTH_P-1 : 0] cfg_rdata,
+    output logic                          [1 : 0] cfg_rresp,
+    output logic                                  cfg_rvalid,
+    input  wire                                   cfg_rready
+
+    // -------------------------------------------------------------------------
+    // Memory Controller AXI4 ports
+    // -------------------------------------------------------------------------
+
+    // // Write Address Channel
+    // output logic           [AXI_ID_WIDTH_P-1 : 0] mc_awid,
+    // output logic         [AXI_ADDR_WIDTH_P-1 : 0] mc_awaddr,
+    // output logic                          [7 : 0] mc_awlen,
+    // output logic                          [2 : 0] mc_awsize,
+    // output logic                          [1 : 0] mc_awburst,
+    // output logic                                  mc_awlock,
+    // output logic                          [3 : 0] mc_awqos,
+    // output logic                                  mc_awvalid,
+    // input  wire                                   mc_awready,
+
+    // // Write Data Channel
+    // output logic         [AXI_DATA_WIDTH_P-1 : 0] mc_wdata,
+    // output logic     [(AXI_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
+    // output logic                                  mc_wlast,
+    // output logic                                  mc_wvalid,
+    // input  wire                                   mc_wready,
+
+    // // Write Response Channel
+    // input  wire            [AXI_ID_WIDTH_P-1 : 0] mc_bid,
+    // input  wire                           [1 : 0] mc_bresp,
+    // input  wire                                   mc_bvalid,
+    // output logic                                  mc_bready,
+
+    // // Read Address Channel
+    // output logic           [AXI_ID_WIDTH_P-1 : 0] mc_arid,
+    // output logic         [AXI_ADDR_WIDTH_P-1 : 0] mc_araddr,
+    // output logic                          [7 : 0] mc_arlen,
+    // output logic                          [2 : 0] mc_arsize,
+    // output logic                          [1 : 0] mc_arburst,
+    // output logic                                  mc_arlock,
+    // output logic                          [3 : 0] mc_arqos,
+    // output logic                                  mc_arvalid,
+    // input  wire                                   mc_arready,
+
+    // // Read Data Channel
+    // input  wire            [AXI_ID_WIDTH_P-1 : 0] mc_rid,
+    // input  wire                           [1 : 0] mc_rresp,
+    // input  wire          [AXI_DATA_WIDTH_P-1 : 0] mc_rdata,
+    // input  wire                                   mc_rlast,
+    // input  wire                                   mc_rvalid,
+    // output logic                                  mc_rready
+
+    // output logic                                  tx_mclk,
+    // output logic                                  tx_lrck,
+    // output logic                                  tx_sclk,
+    // output logic                                  tx_sdout,
+    // output logic                                  rx_mclk,
+    // output logic                                  rx_lrck,
+    // output logic                                  rx_sclk,
+    // input  wire                                   rx_sdin
   );
 
 
+  typedef enum {
+    AW_WAIT_FOR_CMD_E,
+    AW_WAIT_FOR_HS_E,
+    W_WAIT_FOR_HS_E
+  } write_state_t;
+
+  typedef enum {
+    AR_WAIT_FOR_CMD_E,
+    AR_WAIT_FOR_HS_E,
+    R_WAIT_FOR_HS_E
+  } read_state_t;
+
+  // Toggling LED
+  logic [AXI_DATA_WIDTH_P-1 : 0] led_counter;
+
+  // Buttons
   logic btn_0_tgl;
   logic btn_1_tgl;
   logic btn_2_tgl;
 
+  // AXI4 registers
+  logic [AXI_DATA_WIDTH_P-1 : 0] cr_led_0;
+  logic [AXI_DATA_WIDTH_P-1 : 0] sr_led_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] sr_mc_axi4_rdata;
+  logic [AXI_DATA_WIDTH_P-1 : 0] cr_axi_address;
+  logic [AXI_DATA_WIDTH_P-1 : 0] cr_wdata;
+  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_write;
+  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_read;
+  logic [AXI_DATA_WIDTH_P-1 : 0] sr_rdata;
 
-  // AXI4-S registers
-  logic [C_S00_AXI_DATA_WIDTH-1 : 0] cr_led_0;
-  logic [C_S00_AXI_DATA_WIDTH-1 : 0] sr_led_2;
+  // AXI4 Arbiter Write Channel (Master is a SW register)
+  write_state_t write_state;
+  logic mst_awvalid;
+  logic mst_awready;
+  logic mst_wvalid;
+  logic mst_wready;
 
+  // AXI4 Arbiter Read Channel (Master is a SW register)
+  read_state_t read_state;
+  logic mst_arready;
+  logic mst_arvalid;
+  logic mst_rlast;
+  logic mst_rvalid;
+  logic mst_rready;
 
-  // Toggles the LEDs
+  assign sr_led_counter = led_counter;
+
+  // -------------------------------------------------------------------------
+  // Buttons controlling LEDs
+  // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : led_toggle_p0
     if (!rst_n) begin
 
@@ -102,10 +197,6 @@ module project_top #(
 
     end
     else begin
-
-      // if (btn_0_tgl) begin
-      //   led_0 <= ~led_0;
-      // end
 
       led_0 <= cr_led_0[0];
 
@@ -121,34 +212,125 @@ module project_top #(
   end
 
 
+  // -------------------------------------------------------------------------
   // Clock 'clk_sys' (125MHz) with LED process
+  // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
-
-    int counter_v;
 
     if (!rst_n) begin
 
-      led_3     <= '0;
-      counter_v <= 0;
-      sr_led_2  <= '0;
+      led_3       <= '0;
+      led_counter <= '0;
 
     end
     else begin
 
-      if ( counter_v == 62500000-1 ) begin
-        led_3     <= ~led_3;
-        counter_v <= 0;
-        sr_led_2  <= sr_led_2 + 1;
+      if (led_counter == 62500000-1) begin
+        led_3       <= ~led_3;
+        led_counter <= 0;
       end
       else begin
-        counter_v <= counter_v + 1;
+        led_counter <= led_counter + 1;
       end
 
     end
   end
 
 
-  // Buttons
+  // -------------------------------------------------------------------------
+  // Process for routing SW commands to AXI4 writes to the DDR
+  // -------------------------------------------------------------------------
+//  always_ff @(posedge clk or negedge rst_n) begin
+//    if (!rst_n) begin
+//      write_state <= AW_WAIT_FOR_CMD_E;
+//      mst_awvalid <= '0;
+//    end
+//    else begin
+//
+//      case (write_state)
+//
+//        AW_WAIT_FOR_CMD_E: begin
+//
+//          if (cmd_mc_axi4_write) begin
+//            mst_awvalid <= '1;
+//            write_state <= AW_WAIT_FOR_HS_E;
+//          end
+//        end
+//
+//
+//        AW_WAIT_FOR_HS_E: begin
+//
+//          if (mst_awready) begin
+//            mst_awvalid <= '0;
+//            mst_wvalid  <= '1;
+//            write_state <= W_WAIT_FOR_HS_E;
+//          end
+//        end
+//
+//
+//        W_WAIT_FOR_HS_E: begin
+//
+//          if (mst_awready) begin
+//            mst_wvalid  <= '0;
+//            write_state <= AW_WAIT_FOR_CMD_E;
+//          end
+//        end
+//
+//      endcase
+//
+//    end
+//  end
+
+
+  // -------------------------------------------------------------------------
+  // Process for routing SW commands to AXI4 reads the DDR
+  // -------------------------------------------------------------------------
+//  always_ff @(posedge clk or negedge rst_n) begin
+//    if (!rst_n) begin
+//      read_state  <= AR_WAIT_FOR_CMD_E;
+//      mst_arvalid <= '0;
+//      mst_rready  <= '0;
+//    end
+//    else begin
+//
+//      case (read_state)
+//
+//        AR_WAIT_FOR_CMD_E: begin
+//
+//          if (cmd_mc_axi4_read) begin
+//            mst_arvalid <= '1;
+//            read_state  <= AR_WAIT_FOR_HS_E;
+//          end
+//        end
+//
+//
+//        AR_WAIT_FOR_HS_E: begin
+//
+//          if (mst_arready) begin
+//            mst_arvalid <= '0;
+//            read_state  <= R_WAIT_FOR_HS_E;
+//            mst_rready  <= '1;
+//          end
+//        end
+//
+//
+//        R_WAIT_FOR_HS_E: begin
+//
+//          if (mst_rlast && mst_rvalid) begin
+//            mst_rready <= '0;
+//            read_state <= AR_WAIT_FOR_CMD_E;
+//          end
+//        end
+//
+//      endcase
+//
+//    end
+//  end
+
+
+  // -------------------------------------------------------------------------
+  // Wrapper for mechanical buttons
+  // -------------------------------------------------------------------------
   arty_z7_buttons_top arty_z7_buttons_top_i0 (
     .clk       ( clk       ),
     .rst_n     ( rst_n     ),
@@ -163,43 +345,191 @@ module project_top #(
   );
 
 
+  // -------------------------------------------------------------------------
+  // AXI4 Slave with PL registers
+  // -------------------------------------------------------------------------
   register_axi_slave #(
-    .AXI_DATA_WIDTH_C ( C_S00_AXI_DATA_WIDTH ),
-    .AXI_ADDR_WIDTH_C ( C_S00_AXI_ADDR_WIDTH )
+    .AXI_DATA_WIDTH_C  ( AXI_DATA_WIDTH_P  ),
+    .AXI_ADDR_WIDTH_C  ( AXI_ADDR_WIDTH_P  )
   ) register_axi_slave_i0 (
 
-    .clk              ( s00_axi_aclk         ), // input
-    .rst_n            ( s00_axi_aresetn      ), // input
+    .clk               ( clk               ), // input
+    .rst_n             ( rst_n             ), // input
 
-    .awaddr           ( s00_axi_awaddr       ), // input
-    .awvalid          ( s00_axi_awvalid      ), // input
-    .awready          ( s00_axi_awready      ), // output
+    .awaddr            ( cfg_awaddr        ), // input
+    .awvalid           ( cfg_awvalid       ), // input
+    .awready           ( cfg_awready       ), // output
 
-    .wdata            ( s00_axi_wdata        ), // input
-    .wstrb            ( s00_axi_wstrb        ), // input
-    .wvalid           ( s00_axi_wvalid       ), // input
-    .wready           ( s00_axi_wready       ), // output
+    .wdata             ( cfg_wdata         ), // input
+    .wstrb             ( cfg_wstrb         ), // input
+    .wvalid            ( cfg_wvalid        ), // input
+    .wready            ( cfg_wready        ), // output
 
-    .bresp            ( s00_axi_bresp        ), // output
-    .bvalid           ( s00_axi_bvalid       ), // output
-    .bready           ( s00_axi_bready       ), // input
+    .bresp             ( cfg_bresp         ), // output
+    .bvalid            ( cfg_bvalid        ), // output
+    .bready            ( cfg_bready        ), // input
 
-    .araddr           ( s00_axi_araddr       ), // input
-    .arvalid          ( s00_axi_arvalid      ), // input
-    .arready          ( s00_axi_arready      ), // output
+    .araddr            ( cfg_araddr        ), // input
+    .arvalid           ( cfg_arvalid       ), // input
+    .arready           ( cfg_arready       ), // output
 
-    .rdata            ( s00_axi_rdata        ), // output
-    .rresp            ( s00_axi_rresp        ), // output
-    .rvalid           ( s00_axi_rvalid       ), // output
-    .rready           ( s00_axi_rready       ), // input
+    .rdata             ( cfg_rdata         ), // output
+    .rresp             ( cfg_rresp         ), // output
+    .rvalid            ( cfg_rvalid        ), // output
+    .rready            ( cfg_rready        ), // input
 
-    .cr_led_0         ( cr_led_0             ), // output
-    .sr_led_2         ( sr_led_2             )  // input
+    .cr_led_0          ( cr_led_0          ), // output
+    .cr_axi_address    ( cr_axi_address    ), // output
+    .cr_wdata          ( cr_wdata          ), // output
+    .cmd_mc_axi4_write ( cmd_mc_axi4_write ), // output
+    .cmd_mc_axi4_read  ( cmd_mc_axi4_read  ), // output
+
+    .sr_led_counter    ( sr_led_counter    ), // input
+    .sr_rdata          ( sr_rdata          )  // input
   );
 
 
+  // -------------------------------------------------------------------------
+  // AXI4 arbiter, several PL AXI4 Masters to DDR MC AXI4 Slave
+  // -------------------------------------------------------------------------
+  // axi4_m2s_arbiter #(
+  //   .AXI_ID_WIDTH_P   (                  ),
+  //   .AXI_ADDR_WIDTH_P ( AXI_ADDR_WIDTH_P ),
+  //   .AXI_DATA_WIDTH_P ( AXI_DATA_WIDTH_P ),
+  //   .AXI_STRB_WIDTH_P (                  ),
+  //   .NR_OF_MASTERS_P  (                  )   // what if one slave ?
+  // )(
+
+  //   // Clock and reset
+  //   .clk              ( clk              ), // input
+  //   .rst_n            ( rst_n            ), // input
+
+  //   // -------------------------------------------------------------------------
+  //   // AXI4 Masters
+  //   // -------------------------------------------------------------------------
+
+  //   // Write Address Channel
+  //   .mst_awid         ( '0               ), // input
+  //   .mst_awaddr       ( cr_axi_address   ), // input
+  //   .mst_awlen        ( '0               ), // input
+  //   .mst_awvalid      ( mst_awvalid      ), // input
+  //   .mst_awready      ( mst_awready      ), // output
+
+  //   // Write Data Channel
+  //   .mst_wdata        ( cr_wdata         ), // input
+  //   .mst_wstrb        ( '1               ), // input
+  //   .mst_wlast        ( '1               ), // input
+  //   .mst_wvalid       ( mst_wvalid       ), // input
+  //   .mst_wready       ( mst_wready       ), // output
+
+  //   // Read Address Channel
+  //   .mst_arid         ( '0               ), // input
+  //   .mst_araddr       ( cr_axi_address   ), // input
+  //   .mst_arlen        ( '0               ), // input
+  //   .mst_arvalid      ( mst_arvalid      ), // input
+  //   .mst_arready      ( mst_arready      ), // output
+
+  //   // Read Data Channel
+  //   .mst_rdata        ( sr_mc_axi4_rdata ), // output
+  //   .mst_rlast        ( mst_rlast        ), // output
+  //   .mst_rvalid       ( mst_rvalid       ), // output
+  //   .mst_rready       ( mst_rready       ), // input
+
+  //   // -------------------------------------------------------------------------
+  //   // AXI4 Slave
+  //   // -------------------------------------------------------------------------
+
+  //   // Write Address Channel
+  //   .slv_awid         ( mc_awid          ), // output
+  //   .slv_awaddr       ( mc_awaddr        ), // output
+  //   .slv_awlen        ( mc_awlen         ), // output
+  //   .slv_awsize       ( mc_awsize        ), // output
+  //   .slv_awburst      ( mc_awburst       ), // output
+  //   .slv_awlock       ( mc_awlock        ), // output
+  //   .slv_awcache      ( mc_awqos         ), // output
+  //   .slv_awprot       (                  ), // output
+  //   .slv_awqos        (                  ), // output
+  //   .slv_awvalid      ( mc_awvalid       ), // output
+  //   .slv_awready      ( mc_awready       ), // input
+
+  //   // Write Data Channel
+  //   .slv_wdata        ( mc_wdata         ), // output
+  //   .slv_wstrb        ( mc_wstrb         ), // output
+  //   .slv_wlast        ( mc_wlast         ), // output
+  //   .slv_wvalid       ( mc_wvalid        ), // output
+  //   .slv_wready       ( mc_wready        ), // input
+
+  //   // Write Response Channel
+  //   .slv_bid          ( mc_bid           ), // input
+  //   .slv_bresp        ( mc_bresp         ), // input
+  //   .slv_bvalid       ( mc_bvalid        ), // input
+  //   .slv_bready       ( mc_bready        ), // output
+
+  //   // Read Address Channel
+  //   .slv_arid         ( mc_arid          ), // output
+  //   .slv_araddr       ( mc_araddr        ), // output
+  //   .slv_arlen        ( mc_arlen         ), // output
+  //   .slv_arsize       ( mc_arsize        ), // output
+  //   .slv_arburst      ( mc_arburst       ), // output
+  //   .slv_arlock       ( mc_arlock        ), // output
+  //   .slv_arcache      (                  ), // output
+  //   .slv_arprot       (                  ), // output
+  //   .slv_arqos        ( mc_arqos         ), // output
+  //   .slv_arvalid      ( mc_arvalid       ), // output
+  //   .slv_arready      ( mc_arready       ), // input
+
+  //   // Read Data Channel
+  //   .slv_rid          ( mc_rid           ), // input
+  //   .slv_rresp        ( mc_rresp         ), // input
+  //   .slv_rdata        ( mc_rdata         ), // input
+  //   .slv_rlast        ( mc_rlast         ), // input
+  //   .slv_rvalid       ( mc_rvalid        ), // input
+  //   .slv_rready       ( mc_rready        )  // output
+  // );
+
+  // -------------------------------------------------------------------------
+  // PMOD Audio
+  // -------------------------------------------------------------------------
+  // pmod_i2s2 pmod_i2s2_i0 (
+    // .clk_mclk        ( clk_mclk      ),
+    // .rst_n           ( rst_mclk_n    ),
+    // .tx_mclk         ( tx_mclk       ),
+    // .tx_lrck         ( tx_lrck       ),
+    // .tx_sclk         ( tx_sclk       ),
+    // .tx_sdout        ( tx_sdout      ),
+    // .rx_mclk         ( rx_mclk       ),
+    // .rx_lrck         ( rx_lrck       ),
+    // .rx_sclk         ( rx_sclk       ),
+    // .rx_sdin         ( rx_sdin       ),
+    // .tx_axis_s_data  ( axis_tx_data  ),
+    // .tx_axis_s_valid ( axis_tx_valid ),
+    // .tx_axis_s_ready ( axis_tx_ready ),
+    // .tx_axis_s_last  ( axis_tx_last  ),
+    // .rx_axis_m_data  ( axis_rx_data  ),
+    // .rx_axis_m_valid ( axis_rx_valid ),
+    // .rx_axis_m_ready ( axis_rx_ready ),
+    // .rx_axis_m_last  ( axis_rx_last  )
+  // );
 
 
+  // -------------------------------------------------------------------------
+  // Audio Volume
+  // -------------------------------------------------------------------------
+  // axis_volume_controller #(
+    // .SWITCH_WIDTH ( 4                         ),
+    // .DATA_WIDTH   ( 24                        )
+  // ) axis_volume_controller_i0 (
+    // .clk          ( clk_mclk                  ),
+    // .sw           ( {sw_1, sw_0, 1'b1, 1'b1 } ),
+    // .s_axis_data  ( axis_rx_data              ),
+    // .s_axis_valid ( axis_rx_valid             ),
+    // .s_axis_ready ( axis_rx_ready             ),
+    // .s_axis_last  ( axis_rx_last              ),
+    // .m_axis_data  ( axis_tx_data              ),
+    // .m_axis_valid ( axis_tx_valid             ),
+    // .m_axis_ready ( axis_tx_ready             ),
+    // .m_axis_last  ( axis_tx_last              )
+  // );
 
 
 

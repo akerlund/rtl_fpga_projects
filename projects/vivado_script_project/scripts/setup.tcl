@@ -297,11 +297,13 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
   create_bd_cell -type ip -vlnv $_xip_vendor:$_xip_ip_library:$_xip_ip_name:1.0 $_bd_name
   create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0
 
+  # Set up PS7 ports, clock frequency
   apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable"} [get_bd_cells processing_system7_0]
-  apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}} [get_bd_pins $_bd_name/clk]
-
-
   set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $_fclk_freq_mhz] [get_bd_cells processing_system7_0]
+
+  # Connect IP's AXI4 ports
+  apply_bd_automation -rule xilinx.com:bd_rule:axi4   -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/$_bd_name/cfg} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins $_bd_name/cfg]
+  #apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins $_bd_name/clk]
 
   # Create ports in the block design and connect them to the top module
   foreach _io [dict get $_ip_interfaces data_io] {
@@ -309,10 +311,22 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
     connect_bd_net [get_bd_pins /$_bd_name/[dict get $_io name]] [get_bd_ports [dict get $_io name]]
   }
 
-  connect_bd_net [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+  # Only if no AXI
+  #connect_bd_net [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
+
+  #set_property range 512 [get_bd_addr_segs {processing_system7_0/Data/SEG_bd_project_top_0_reg0}]
+  #set_property offset 0x43D00000 [get_bd_addr_segs {processing_system7_0/Data/SEG_bd_project_top_0_reg0}]
+
+
 
   validate_bd_design
   save_bd_design
+
+  # create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0
+  # apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/processing_system7_0/FCLK_CLK0 (125 MHz)} Clk_slave {Auto} Clk_xbar {/processing_system7_0/FCLK_CLK0 (125 MHz)} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_0/S_AXI_LITE} ddr_seg {Auto} intc_ip {/ps7_0_axi_periph} master_apm {0}}  [get_bd_intf_pins axi_dma_0/S_AXI_LITE]
+  # set_property -dict [list CONFIG.PCW_USE_S_AXI_HP0 {1}] [get_bd_cells processing_system7_0]
+  #
+
 }
 
 

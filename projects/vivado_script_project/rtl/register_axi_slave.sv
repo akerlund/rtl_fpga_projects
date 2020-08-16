@@ -63,15 +63,22 @@ module register_axi_slave #(
     // ---------------------------------------------------------------------------
     // Register Ports
     // ---------------------------------------------------------------------------
+    // <PORTS>
+    output logic     [AXI_DATA_WIDTH_C-1 : 0] cr_led_0,
+    input  wire      [AXI_DATA_WIDTH_C-1 : 0] sr_led_counter,
 
-    output logic       [AXI_DATA_WIDTH_C-1:0] cr_led_0,
-    input  wire        [AXI_DATA_WIDTH_C-1:0] sr_led_2
+    output logic     [AXI_DATA_WIDTH_C-1 : 0] cr_axi_address,
+    output logic     [AXI_DATA_WIDTH_C-1 : 0] cr_wdata,
+    input  wire      [AXI_DATA_WIDTH_C-1 : 0] sr_rdata,
+
+    output logic     [AXI_DATA_WIDTH_C-1 : 0] cmd_mc_axi4_write,
+    output logic     [AXI_DATA_WIDTH_C-1 : 0] cmd_mc_axi4_read,
+    input  wire      [AXI_DATA_WIDTH_C-1 : 0] sr_mc_axi4_rdata
   );
 
   // ---------------------------------------------------------------------------
   // Internal AXI signals
   // ---------------------------------------------------------------------------
-
 
   // Example-specific design signals
   // local parameter for addressing 32 bit / 64 bit AXI_DATA_WIDTH_C
@@ -80,47 +87,6 @@ module register_axi_slave #(
   // ADDR_LSB_C = 3 for 64 bits (n downto 3)
   localparam int ADDR_LSB_C          = (AXI_DATA_WIDTH_C / 32) + 1;
   localparam int OPT_MEM_ADDR_BITS_C = 4;
-
-  //----------------------------------------------
-  // Signals for user logic register space example
-  //------------------------------------------------
-
-  // ---------------------------------------------------------------------------
-  // Slave Registers
-  // ---------------------------------------------------------------------------
-
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg0;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg1;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg2;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg3;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg4;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg5;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg6;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg7;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg8;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg9;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg10;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg11;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg12;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg13;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg14;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg15;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg16;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg17;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg18;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg19;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg20;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg21;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg22;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg23;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg24;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg25;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg26;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg27;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg28;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg29;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg30;
-  logic [AXI_DATA_WIDTH_C-1 : 0] slv_reg31;
 
   // ---------------------------------------------------------------------------
   // Internal signals
@@ -139,15 +105,8 @@ module register_axi_slave #(
   // Internal assignments
   // ---------------------------------------------------------------------------
 
-  assign write_enable = wready  & wvalid  & awready && awvalid;
+  assign write_enable = wready  & wvalid  & awready & awvalid;
   assign read_enable  = arready & arvalid & ~rvalid;
-
-  // ---------------------------------------------------------------------------
-  // Register assignments
-  // ---------------------------------------------------------------------------
-
-  assign cr_led_0 = slv_reg0;
-
 
 
   // ---------------------------------------------------------------------------
@@ -205,47 +164,26 @@ module register_axi_slave #(
   end
 
 
-
   // ---------------------------------------------------------------------------
   // Register writes
   // ---------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      slv_reg0  <= 0;
-      //slv_reg1  <= 0;
-      slv_reg2  <= 0;
-      slv_reg3  <= 0;
-      slv_reg4  <= 0;
-      slv_reg5  <= 0;
-      slv_reg6  <= 0;
-      slv_reg7  <= 0;
-      slv_reg8  <= 0;
-      slv_reg9  <= 0;
-      slv_reg10 <= 0;
-      slv_reg11 <= 0;
-      slv_reg12 <= 0;
-      slv_reg13 <= 0;
-      slv_reg14 <= 0;
-      slv_reg15 <= 0;
-      slv_reg16 <= 0;
-      slv_reg17 <= 0;
-      slv_reg18 <= 0;
-      slv_reg19 <= 0;
-      slv_reg20 <= 0;
-      slv_reg21 <= 0;
-      slv_reg22 <= 0;
-      slv_reg23 <= 0;
-      slv_reg24 <= 0;
-      slv_reg25 <= 0;
-      slv_reg26 <= 0;
-      slv_reg27 <= 0;
-      slv_reg28 <= 0;
-      slv_reg29 <= 0;
-      slv_reg30 <= 0;
-      slv_reg31 <= 0;
+
+      // "<RESETS>"
+      cr_led_0          <= '0;
+
+      cr_axi_address    <= '0;
+      cr_wdata          <= '0;
+      cmd_mc_axi4_write <= '0;
+      cmd_mc_axi4_read  <= '0;
 
     end
     else begin
+
+      // "<COMMANDS>"
+      cmd_mc_axi4_write <= '0;
+      cmd_mc_axi4_read  <= '0;
 
       if (write_enable) begin
 
@@ -254,7 +192,7 @@ module register_axi_slave #(
           5'h00: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                slv_reg0[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+                cr_led_0[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
               end
             end
           end
@@ -262,7 +200,7 @@ module register_axi_slave #(
           5'h01: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                //slv_reg1[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+                cr_axi_address[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
               end
             end
           end
@@ -270,7 +208,7 @@ module register_axi_slave #(
           5'h02: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                slv_reg2[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+                cr_wdata[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
               end
             end
           end
@@ -278,7 +216,7 @@ module register_axi_slave #(
           5'h03: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                slv_reg3[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+                cmd_mc_axi4_write[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
               end
             end
           end
@@ -286,260 +224,19 @@ module register_axi_slave #(
           5'h04: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                slv_reg4[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h05: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg5[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h06: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg6[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h07: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg7[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h08: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg8[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h09: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg9[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0A: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg10[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0B: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg11[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0C: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg12[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0D: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg13[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0E: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg14[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h0F: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg15[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h10: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg16[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h11: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg17[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h12: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg18[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h13: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg19[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h14: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg20[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h15: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg21[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h16: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg22[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h17: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg23[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h18: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg24[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h19: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg25[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1A: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg26[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1B: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg27[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1C: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg28[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1D: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg29[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1E: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg30[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h1F: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_C/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                slv_reg31[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+                cmd_mc_axi4_read[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
               end
             end
           end
 
           default : begin
-            slv_reg0  <= slv_reg0;
-            //slv_reg1  <= slv_reg1;
-            slv_reg2  <= slv_reg2;
-            slv_reg3  <= slv_reg3;
-            slv_reg4  <= slv_reg4;
-            slv_reg5  <= slv_reg5;
-            slv_reg6  <= slv_reg6;
-            slv_reg7  <= slv_reg7;
-            slv_reg8  <= slv_reg8;
-            slv_reg9  <= slv_reg9;
-            slv_reg10 <= slv_reg10;
-            slv_reg11 <= slv_reg11;
-            slv_reg12 <= slv_reg12;
-            slv_reg13 <= slv_reg13;
-            slv_reg14 <= slv_reg14;
-            slv_reg15 <= slv_reg15;
-            slv_reg16 <= slv_reg16;
-            slv_reg17 <= slv_reg17;
-            slv_reg18 <= slv_reg18;
-            slv_reg19 <= slv_reg19;
-            slv_reg20 <= slv_reg20;
-            slv_reg21 <= slv_reg21;
-            slv_reg22 <= slv_reg22;
-            slv_reg23 <= slv_reg23;
-            slv_reg24 <= slv_reg24;
-            slv_reg25 <= slv_reg25;
-            slv_reg26 <= slv_reg26;
-            slv_reg27 <= slv_reg27;
-            slv_reg28 <= slv_reg28;
-            slv_reg29 <= slv_reg29;
-            slv_reg30 <= slv_reg30;
-            slv_reg31 <= slv_reg31;
+
+            cr_led_0          <= cr_led_0;
+            cr_axi_address    <= cr_axi_address;
+            cr_wdata          <= cr_wdata;
+            cmd_mc_axi4_write <= cmd_mc_axi4_write;
+            cmd_mc_axi4_read  <= cmd_mc_axi4_read;
+
           end
         endcase
       end
@@ -592,6 +289,7 @@ module register_axi_slave #(
     end
   end
 
+
   // ---------------------------------------------------------------------------
   // Read Data Channel
   // Generate "rvalid"
@@ -620,50 +318,24 @@ module register_axi_slave #(
   end
 
 
+  // ---------------------------------------------------------------------------
+  // Register reads
+  // ---------------------------------------------------------------------------
   always_comb begin
+
     // Address decoding for reading registers
     case (araddr_d0[ADDR_LSB_C+OPT_MEM_ADDR_BITS_C : ADDR_LSB_C])
 
-      5'h00   : rdata_d0 <= slv_reg0;
-      5'h01   : rdata_d0 <= slv_reg1;
-      5'h02   : rdata_d0 <= slv_reg2;
-      5'h03   : rdata_d0 <= slv_reg3;
-      5'h04   : rdata_d0 <= slv_reg4;
-      5'h05   : rdata_d0 <= slv_reg5;
-      5'h06   : rdata_d0 <= slv_reg6;
-      5'h07   : rdata_d0 <= slv_reg7;
-      5'h08   : rdata_d0 <= slv_reg8;
-      5'h09   : rdata_d0 <= slv_reg9;
-      5'h0A   : rdata_d0 <= slv_reg10;
-      5'h0B   : rdata_d0 <= slv_reg11;
-      5'h0C   : rdata_d0 <= slv_reg12;
-      5'h0D   : rdata_d0 <= slv_reg13;
-      5'h0E   : rdata_d0 <= slv_reg14;
-      5'h0F   : rdata_d0 <= slv_reg15;
-      5'h10   : rdata_d0 <= slv_reg16;
-      5'h11   : rdata_d0 <= slv_reg17;
-      5'h12   : rdata_d0 <= slv_reg18;
-      5'h13   : rdata_d0 <= slv_reg19;
-      5'h14   : rdata_d0 <= slv_reg20;
-      5'h15   : rdata_d0 <= slv_reg21;
-      5'h16   : rdata_d0 <= slv_reg22;
-      5'h17   : rdata_d0 <= slv_reg23;
-      5'h18   : rdata_d0 <= slv_reg24;
-      5'h19   : rdata_d0 <= slv_reg25;
-      5'h1A   : rdata_d0 <= slv_reg26;
-      5'h1B   : rdata_d0 <= slv_reg27;
-      5'h1C   : rdata_d0 <= slv_reg28;
-      5'h1D   : rdata_d0 <= slv_reg29;
-      5'h1E   : rdata_d0 <= slv_reg30;
-      5'h1F   : rdata_d0 <= slv_reg31;
+      5'h00   : rdata_d0 <= 1;
+      5'h01   : rdata_d0 <= 2;
+      5'h02   : rdata_d0 <= 3;
+      5'h03   : rdata_d0 <= 4;
+      5'h04   : rdata_d0 <= 5;
+      5'h05   : rdata_d0 <= sr_led_counter;
+      5'h06   : rdata_d0 <= 6;
+
       default : rdata_d0 <= '0;
     endcase
-  end
-
-
-  // Add user logic here
-  always_ff @(posedge clk) begin
-    slv_reg1 <= sr_led_2;
   end
 
 endmodule
