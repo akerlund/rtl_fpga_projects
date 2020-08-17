@@ -35,7 +35,7 @@
 
 `default_nettype none
 
-module i2s2_cs5343 (
+module cs5343_i2s2 (
 
     input  wire           clk_mclk, // Required to be approximately 22.591MHz
     input  wire           rst_n,
@@ -50,12 +50,12 @@ module i2s2_cs5343 (
     output logic          rx_sclk,
     input  wire           rx_sdin,
 
-    input  wire  [31 : 0] tx_axis_s_data,
+    input  wire  [23 : 0] tx_axis_s_data,
     input  wire           tx_axis_s_valid,
     output logic          tx_axis_s_ready,
     input  wire           tx_axis_s_last,
 
-    output logic [31 : 0] rx_axis_m_data,
+    output logic [23 : 0] rx_axis_m_data,
     output logic          rx_axis_m_valid,
     input  wire           rx_axis_m_ready,
     output logic          rx_axis_m_last
@@ -71,8 +71,8 @@ module i2s2_cs5343 (
 
 
   // AXIS SLAVE CONTROLLER
-  logic [31 : 0] tx_data_l;
-  logic [31 : 0] tx_data_r;
+  logic [23 : 0] tx_data_l;
+  logic [23 : 0] tx_data_r;
 
   // I2S TRANSMIT SHIFT REGISTERS
   logic [23 : 0] tx_data_l_shift;
@@ -86,8 +86,8 @@ module i2s2_cs5343 (
   logic [23 : 0] rx_data_r_shift;
 
   // AXIS MASTER CONTROLLER
-  logic [31 : 0] rx_data_l;
-  logic [31 : 0] rx_data_r;
+  logic [23 : 0] rx_data_l;
+  logic [23 : 0] rx_data_r;
 
   //
   assign rx_axis_m_data = (rx_axis_m_last == 1'b1) ? rx_data_r : rx_data_l;
@@ -127,8 +127,8 @@ module i2s2_cs5343 (
     else begin
 
       if (count == 3'b000000111) begin
-        tx_data_l_shift <= tx_data_l[23 : 0];
-        tx_data_r_shift <= tx_data_r[23 : 0];
+        tx_data_l_shift <= tx_data_l;
+        tx_data_r_shift <= tx_data_r;
       end
       else if (count[2 : 0] == 3'b111 && count[7 : 3] >= 5'd1 && count[7 : 3] <= 5'd24) begin
         if (count[8] == 1'b1) begin
@@ -187,8 +187,8 @@ module i2s2_cs5343 (
       rx_data_l <= '0;
       rx_data_r <= '0;
     end else if (count == eof_count_c && rx_axis_m_valid == 1'b0) begin
-      rx_data_l <= {8'b0, rx_data_l_shift};
-      rx_data_r <= {8'b0, rx_data_r_shift};
+      rx_data_l <= rx_data_l_shift;
+      rx_data_r <= rx_data_r_shift;
     end
   end
 

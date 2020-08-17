@@ -1,6 +1,12 @@
 submodules/rtl_common_design/synchronizers/io_synchronizer_core.sv
 submodules/rtl_common_design/synchronizers/io_synchronizer.sv
+submodules/rtl_common_design/synchronizers/reset_synchronizer_core.sv
+submodules/rtl_common_design/synchronizers/reset_synchronizer.sv
 submodules/rtl_common_design/mechanics/button_core.sv
 components/arty_z7_buttons/rtl/buttons_top.sv
 projects/vivado_script_project/rtl/register_axi_slave.sv
+projects/vivado_script_project/rtl/axis_volume_controller.v
+components/cs5343/rtl/cs5343_car.sv
+components/cs5343/rtl/cs5343_i2s2.sv
+
 projects/vivado_script_project/rtl/project_top.sv

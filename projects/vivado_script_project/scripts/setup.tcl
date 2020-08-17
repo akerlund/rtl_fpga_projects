@@ -390,7 +390,7 @@ set _top_module_name      "project_top"
 #set _xip_timing_constraints   "$_project_path/constraints/timing_constraints.tcl"
 set _xip_timing_constraints   ""
 set _xip_physical_constraints ""
-set _top_timing_constraints   ""
+set _top_timing_constraints   "$_project_path/constraints/timing_constraints.tcl"
 set _top_physical_constraints "$_project_path/constraints/physical_constraints.tcl"
 
 set _constraints [dict create                   \
@@ -419,14 +419,24 @@ set _ip_interfaces [dict create                          \
           ]                                              \
   resets  [list rst_n                                    \
           ]                                              \
-  data_io [list [dict create name "led_0" dir "O"]       \
-                [dict create name "led_1" dir "O"]       \
-                [dict create name "led_2" dir "O"]       \
-                [dict create name "led_3" dir "O"]       \
-                [dict create name "btn_0" dir "I"]       \
-                [dict create name "btn_1" dir "I"]       \
-                [dict create name "btn_2" dir "I"]       \
-                [dict create name "btn_3" dir "I"]       \
+  data_io [list [dict create name "led_0"       dir "O"] \
+                [dict create name "led_1"       dir "O"] \
+                [dict create name "led_2"       dir "O"] \
+                [dict create name "led_3"       dir "O"] \
+                [dict create name "btn_0"       dir "I"] \
+                [dict create name "btn_1"       dir "I"] \
+                [dict create name "btn_2"       dir "I"] \
+                [dict create name "btn_3"       dir "I"] \
+                [dict create name "sw_0"        dir "I"] \
+                [dict create name "sw_1"        dir "I"] \
+                [dict create name "cs_tx_mclk"  dir "O"] \
+                [dict create name "cs_tx_lrck"  dir "O"] \
+                [dict create name "cs_tx_sclk"  dir "O"] \
+                [dict create name "cs_tx_sdout" dir "O"] \
+                [dict create name "cs_rx_mclk"  dir "O"] \
+                [dict create name "cs_rx_lrck"  dir "O"] \
+                [dict create name "cs_rx_sclk"  dir "O"] \
+                [dict create name "cs_rx_sdin"  dir "I"] \
           ]                                              \
 ]
 

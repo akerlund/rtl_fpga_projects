@@ -47,6 +47,10 @@ module project_top #(
     input  wire                                   btn_2,
     input  wire                                   btn_3,
 
+    // Arty Z7 switches
+    input  wire                                   sw_0,
+    input  wire                                   sw_1,
+
     // ---------------------------------------------------------------------------
     // PL register AXI4 ports
     // ---------------------------------------------------------------------------
@@ -78,7 +82,7 @@ module project_top #(
     output logic         [AXI_DATA_WIDTH_P-1 : 0] cfg_rdata,
     output logic                          [1 : 0] cfg_rresp,
     output logic                                  cfg_rvalid,
-    input  wire                                   cfg_rready
+    input  wire                                   cfg_rready,
 
     // -------------------------------------------------------------------------
     // Memory Controller AXI4 ports
@@ -127,14 +131,15 @@ module project_top #(
     // input  wire                                   mc_rvalid,
     // output logic                                  mc_rready
 
-    // output logic                                  tx_mclk,
-    // output logic                                  tx_lrck,
-    // output logic                                  tx_sclk,
-    // output logic                                  tx_sdout,
-    // output logic                                  rx_mclk,
-    // output logic                                  rx_lrck,
-    // output logic                                  rx_sclk,
-    // input  wire                                   rx_sdin
+    // Cirrus CS5343 ADC/DAC
+    output logic                                  cs_tx_mclk,
+    output logic                                  cs_tx_lrck,
+    output logic                                  cs_tx_sclk,
+    output logic                                  cs_tx_sdout,
+    output logic                                  cs_rx_mclk,
+    output logic                                  cs_rx_lrck,
+    output logic                                  cs_rx_sclk,
+    input  wire                                   cs_rx_sdin
   );
 
 
@@ -151,7 +156,8 @@ module project_top #(
   } read_state_t;
 
   // Toggling LED
-  logic [AXI_DATA_WIDTH_P-1 : 0] led_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] led_3_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] led_2_counter;
 
   // Buttons
   logic btn_0_tgl;
@@ -183,7 +189,21 @@ module project_top #(
   logic mst_rvalid;
   logic mst_rready;
 
-  assign sr_led_counter = led_counter;
+  // Cirrus clock and reset
+  logic clk_mclk;
+  logic rst_mclk_n;
+
+  // I2S2 PMOD
+  logic [23 : 0] cs_axis_tx_data;
+  logic          cs_axis_tx_ready;
+  logic          cs_axis_tx_last;
+  logic          cs_axis_tx_valid;
+  logic [23 : 0] cs_axis_rx_data;
+  logic          cs_axis_rx_ready;
+  logic          cs_axis_rx_valid;
+  logic          cs_axis_rx_last;
+
+  assign sr_led_counter = led_3_counter;
 
   // -------------------------------------------------------------------------
   // Buttons controlling LEDs
@@ -193,7 +213,6 @@ module project_top #(
 
       led_0 <= '0;
       led_1 <= '0;
-      led_2 <= '0;
 
     end
     else begin
@@ -202,10 +221,6 @@ module project_top #(
 
       if (btn_1_tgl) begin
         led_1 <= ~led_1;
-      end
-
-      if (btn_2_tgl) begin
-        led_2 <= ~led_2;
       end
 
     end
@@ -219,18 +234,43 @@ module project_top #(
 
     if (!rst_n) begin
 
-      led_3       <= '0;
-      led_counter <= '0;
+      led_3         <= '0;
+      led_3_counter <= '0;
 
     end
     else begin
 
-      if (led_counter == 62500000-1) begin
-        led_3       <= ~led_3;
-        led_counter <= 0;
+      if (led_3_counter == 62500000-1) begin
+        led_3         <= ~led_3;
+        led_3_counter <= 0;
       end
       else begin
-        led_counter <= led_counter + 1;
+        led_3_counter <= led_3_counter + 1;
+      end
+
+    end
+  end
+
+
+  // -------------------------------------------------------------------------
+  // Clock 'clk_mclk' (22.58MHz) with LED process
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk_mclk or negedge rst_mclk_n) begin : led_blink_p1
+
+    if (!rst_mclk_n) begin
+
+      led_2         <= '0;
+      led_2_counter <= '0;
+
+    end
+    else begin
+
+      if (led_2_counter == 11290000-1) begin
+        led_2         <= ~led_2;
+        led_2_counter <= 0;
+      end
+      else begin
+        led_2_counter <= led_2_counter + 1;
       end
 
     end
@@ -332,16 +372,16 @@ module project_top #(
   // Wrapper for mechanical buttons
   // -------------------------------------------------------------------------
   arty_z7_buttons_top arty_z7_buttons_top_i0 (
-    .clk       ( clk       ),
-    .rst_n     ( rst_n     ),
-    .btn_0     ( btn_0     ),
-    .btn_1     ( btn_1     ),
-    .btn_2     ( btn_2     ),
-    .btn_3     (           ),
-    .btn_0_tgl ( btn_0_tgl ),
-    .btn_1_tgl ( btn_1_tgl ),
-    .btn_2_tgl ( btn_2_tgl ),
-    .btn_3_tgl (           )
+    .clk       ( clk       ), // input
+    .rst_n     ( rst_n     ), // input
+    .btn_0     ( btn_0     ), // input
+    .btn_1     ( btn_1     ), // input
+    .btn_2     ( btn_2     ), // input
+    .btn_3     (           ), // input
+    .btn_0_tgl ( btn_0_tgl ), // output
+    .btn_1_tgl ( btn_1_tgl ), // output
+    .btn_2_tgl ( btn_2_tgl ), // output
+    .btn_3_tgl (           )  // output
   );
 
 
@@ -488,48 +528,59 @@ module project_top #(
   // );
 
   // -------------------------------------------------------------------------
-  // PMOD Audio
+  // PLL for the Cirrus ICs
   // -------------------------------------------------------------------------
-  // pmod_i2s2 pmod_i2s2_i0 (
-    // .clk_mclk        ( clk_mclk      ),
-    // .rst_n           ( rst_mclk_n    ),
-    // .tx_mclk         ( tx_mclk       ),
-    // .tx_lrck         ( tx_lrck       ),
-    // .tx_sclk         ( tx_sclk       ),
-    // .tx_sdout        ( tx_sdout      ),
-    // .rx_mclk         ( rx_mclk       ),
-    // .rx_lrck         ( rx_lrck       ),
-    // .rx_sclk         ( rx_sclk       ),
-    // .rx_sdin         ( rx_sdin       ),
-    // .tx_axis_s_data  ( axis_tx_data  ),
-    // .tx_axis_s_valid ( axis_tx_valid ),
-    // .tx_axis_s_ready ( axis_tx_ready ),
-    // .tx_axis_s_last  ( axis_tx_last  ),
-    // .rx_axis_m_data  ( axis_rx_data  ),
-    // .rx_axis_m_valid ( axis_rx_valid ),
-    // .rx_axis_m_ready ( axis_rx_ready ),
-    // .rx_axis_m_last  ( axis_rx_last  )
-  // );
+  car_cs5343 car_cs5343_i0 (
+    .clk        ( clk        ), // input
+    .rst_n      ( rst_n      ), // input
+    .clk_mclk   ( clk_mclk   ), // output
+    .rst_mclk_n ( rst_mclk_n )  // output
+  );
+
+  // -------------------------------------------------------------------------
+  // Cirrus CS5343 ADC, CS4344 DAC
+  // -------------------------------------------------------------------------
+  cs5343_i2s2 cs5343_i2s2_i0 (
+    .clk_mclk        ( clk_mclk         ), // input
+    .rst_n           ( rst_mclk_n       ), // input
+    .tx_mclk         ( cs_tx_mclk       ), // output
+    .tx_lrck         ( cs_tx_lrck       ), // output
+    .tx_sclk         ( cs_tx_sclk       ), // output
+    .tx_sdout        ( cs_tx_sdout      ), // output
+    .rx_mclk         ( cs_rx_mclk       ), // output
+    .rx_lrck         ( cs_rx_lrck       ), // output
+    .rx_sclk         ( cs_rx_sclk       ), // output
+    .rx_sdin         ( cs_rx_sdin       ), // input
+    .tx_axis_s_data  ( cs_axis_tx_data  ), // input
+    .tx_axis_s_valid ( cs_axis_tx_valid ), // input
+    .tx_axis_s_ready ( cs_axis_tx_ready ), // output
+    .tx_axis_s_last  ( cs_axis_tx_last  ), // input
+    .rx_axis_m_data  ( cs_axis_rx_data  ), // output
+    .rx_axis_m_valid ( cs_axis_rx_valid ), // output
+    .rx_axis_m_ready ( cs_axis_rx_ready ), // input
+    .rx_axis_m_last  ( cs_axis_rx_last  )  // output
+  );
+
 
 
   // -------------------------------------------------------------------------
   // Audio Volume
   // -------------------------------------------------------------------------
-  // axis_volume_controller #(
-    // .SWITCH_WIDTH ( 4                         ),
-    // .DATA_WIDTH   ( 24                        )
-  // ) axis_volume_controller_i0 (
-    // .clk          ( clk_mclk                  ),
-    // .sw           ( {sw_1, sw_0, 1'b1, 1'b1 } ),
-    // .s_axis_data  ( axis_rx_data              ),
-    // .s_axis_valid ( axis_rx_valid             ),
-    // .s_axis_ready ( axis_rx_ready             ),
-    // .s_axis_last  ( axis_rx_last              ),
-    // .m_axis_data  ( axis_tx_data              ),
-    // .m_axis_valid ( axis_tx_valid             ),
-    // .m_axis_ready ( axis_tx_ready             ),
-    // .m_axis_last  ( axis_tx_last              )
-  // );
+  axis_volume_controller #(
+    .SWITCH_WIDTH ( 4                         ),
+    .DATA_WIDTH   ( 24                        )
+  ) axis_volume_controller_i0 (
+    .clk          ( clk_mclk                  ), // input
+    .sw           ( {sw_1, sw_0, 1'b1, 1'b1 } ), // input
+    .s_axis_data  ( cs_axis_rx_data           ), // input
+    .s_axis_valid ( cs_axis_rx_valid          ), // input
+    .s_axis_ready ( cs_axis_rx_ready          ), // output
+    .s_axis_last  ( cs_axis_rx_last           ), // input
+    .m_axis_data  ( cs_axis_tx_data           ), // output
+    .m_axis_valid ( cs_axis_tx_valid          ), // output
+    .m_axis_ready ( cs_axis_tx_ready          ), // input
+    .m_axis_last  ( cs_axis_tx_last           )  // output
+  );
 
 
 
