@@ -24,7 +24,7 @@
 // Cirrus CS4344 Stereo D/A Converter
 // See; https://www.cirrus.com/products/cs5343-44/
 //
-// Both ICs are placed on the Digilent Pmod I2S2.
+// Both ICs are placed on the Digilent PMOD I2S2.
 //
 // Clock in:  125MHz
 // Clock out: 22.591MHz
@@ -36,14 +36,13 @@
 `default_nettype none
 
 module car_cs5343 (
-
     input  wire  clk,
     input  wire  rst_n,
     output logic clk_mclk,
     output logic rst_mclk_n
   );
 
-  // Parameters which yields a clock frequency of:
+  // PLL parameters which yields a clock frequency of:
   // 125000000 / 5 * 56 / 62 = 22580645.16129032
   localparam int  CLKFBOUT_MULT_C  = 56;
   localparam real CLKIN1_PERIOD_C  = 8.0;
@@ -51,9 +50,10 @@ module car_cs5343 (
   localparam int  CLKOUT0_DIVIDE_C = 62;
 
 
-  logic clk_mclk_int;
-  logic rst_mclk_int_n;
+  logic clk_mclk_int;   // PLL output
+  logic rst_mclk_int_n; // Reset combine of rst_n and pll_locked
 
+  // PLL
   logic clk_pll0_fb0;
   logic clk_pll_locked0;
 
@@ -72,7 +72,7 @@ module car_cs5343 (
     .I ( clk_mclk_int )
   );
 
-  // clk_mclk_int = 22.580645MHz
+  // PLL
   PLLE2_BASE #(
     .BANDWIDTH          ( "OPTIMIZED"      ), // OPTIMIZED,HIGH,LOW
     .CLKFBOUT_MULT      ( CLKFBOUT_MULT_C  ), // Multiply value for all CLKOUT,(2-64)
