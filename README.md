@@ -4,6 +4,9 @@
 
 These project are based on the Digilent [ARTY Z7](https://reference.digilentinc.com/reference/programmable-logic/arty-z7/start) board.
 
+![digilent](https://reference.digilentinc.com/_media/reference/programmable-logic/arty-z7/arty-z7_-_obl_-_600.png)
+
+
 ## Vivado: Installing Digilent Board Files
 
 Download the [archive](https://github.com/Digilent/vivado-boards/archive/master.zip?_ga=2.97053599.1009087387.1591531709-2003481732.1591531709) of the vivado-boards Github repository and extract it to:
