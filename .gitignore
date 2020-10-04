@@ -21,4 +21,6 @@
 **xrc.log
 **verilator/logs*
 **verilator/obj_dir*
+**.log
+**.jou
 
