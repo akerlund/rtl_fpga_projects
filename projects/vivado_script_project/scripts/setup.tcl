@@ -302,8 +302,11 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
   set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $_fclk_freq_mhz] [get_bd_cells processing_system7_0]
 
   # Connect IP's AXI4 ports
-  apply_bd_automation -rule xilinx.com:bd_rule:axi4   -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/$_bd_name/cfg} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins $_bd_name/cfg]
+  apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/$_bd_name/cfg} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins $_bd_name/cfg]
   #apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins $_bd_name/clk]
+
+  set_property -dict [list CONFIG.PCW_USE_S_AXI_HP0 {1}] [get_bd_cells processing_system7_0]
+  apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/processing_system7_0/FCLK_CLK0 (125 MHz)} Clk_slave {Auto} Clk_xbar {Auto} Master {/bd_project_top_0/mc} Slave {/processing_system7_0/S_AXI_HP0} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
 
   # Create ports in the block design and connect them to the top module
   foreach _io [dict get $_ip_interfaces data_io] {
