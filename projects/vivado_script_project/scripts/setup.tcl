@@ -112,19 +112,19 @@ proc add_verilog_files {_git_root _file_list} {
   set _sv_files [split $_file_data "\n"]
 
 
-  puts "INFO \[add_verilog_files\] Found ([llength $_sv_files]) files"
-
-  variable _verilog_files
+  # puts "INFO \[add_verilog_files\] Found ([llength $_sv_files]) files"
+  set _verilog_files ""
 
   foreach _row $_sv_files {
     if { ![regexp {^$} $_row] && ![regexp {^\s*#.*} $_row]} {
       append _verilog_files $_git_root/$_row " "
-      puts "Read: $_git_root/$_row"
+      puts "INFO \[add_verilog_files\] $_git_root/$_row"
     }
   }
 
   read_verilog $_verilog_files
 
+  puts "INFO \[add_verilog_files\] Completed"
 }
 
 

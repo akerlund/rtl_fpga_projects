@@ -142,6 +142,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] sr_hardware_version = 1617;
 
   typedef enum {
     AW_WAIT_FOR_CMD_E,
@@ -194,14 +195,26 @@ module project_top #(
   logic rst_mclk_n;
 
   // I2S2 PMOD
-  logic [23 : 0] cs_axis_tx_data;
-  logic          cs_axis_tx_ready;
-  logic          cs_axis_tx_last;
-  logic          cs_axis_tx_valid;
-  logic [23 : 0] cs_axis_rx_data;
-  logic          cs_axis_rx_ready;
-  logic          cs_axis_rx_valid;
-  logic          cs_axis_rx_last;
+  logic [23 : 0] cs_dac_data;
+  logic          cs_dac_ready;
+  logic          cs_dac_last;
+  logic          cs_dac_valid;
+  logic [23 : 0] cs_adc_data;
+  logic          cs_adc_ready;
+  logic          cs_adc_valid;
+  logic          cs_adc_last;
+
+  // Volume controller ingress (ADC)
+  logic [23 : 0] vc_adc_data;
+  logic          vc_adc_valid;
+  logic          vc_adc_last;
+  logic          vc_adc_ready;
+
+  // Volume controller egress (DAC)
+  logic [23 : 0] vc_dac_data;
+  logic          vc_dac_valid;
+  logic          vc_dac_last;
+  logic          vc_dac_ready;
 
   assign sr_led_counter = led_3_counter;
 
@@ -389,43 +402,47 @@ module project_top #(
   // AXI4 Slave with PL registers
   // -------------------------------------------------------------------------
   register_axi_slave #(
-    .AXI_DATA_WIDTH_C  ( AXI_DATA_WIDTH_P  ),
-    .AXI_ADDR_WIDTH_C  ( AXI_ADDR_WIDTH_P  )
+    .AXI_DATA_WIDTH_P  ( AXI_DATA_WIDTH_P  ),
+    .AXI_ADDR_WIDTH_P  ( AXI_ADDR_WIDTH_P  )
   ) register_axi_slave_i0 (
 
-    .clk               ( clk               ), // input
-    .rst_n             ( rst_n             ), // input
+    .clk                 ( clk                 ), // input
+    .rst_n               ( rst_n               ), // input
 
-    .awaddr            ( cfg_awaddr        ), // input
-    .awvalid           ( cfg_awvalid       ), // input
-    .awready           ( cfg_awready       ), // output
+    .awaddr              ( cfg_awaddr          ), // input
+    .awvalid             ( cfg_awvalid         ), // input
+    .awready             ( cfg_awready         ), // output
 
-    .wdata             ( cfg_wdata         ), // input
-    .wstrb             ( cfg_wstrb         ), // input
-    .wvalid            ( cfg_wvalid        ), // input
-    .wready            ( cfg_wready        ), // output
+    .wdata               ( cfg_wdata           ), // input
+    .wstrb               ( cfg_wstrb           ), // input
+    .wvalid              ( cfg_wvalid          ), // input
+    .wready              ( cfg_wready          ), // output
 
-    .bresp             ( cfg_bresp         ), // output
-    .bvalid            ( cfg_bvalid        ), // output
-    .bready            ( cfg_bready        ), // input
+    .bresp               ( cfg_bresp           ), // output
+    .bvalid              ( cfg_bvalid          ), // output
+    .bready              ( cfg_bready          ), // input
 
-    .araddr            ( cfg_araddr        ), // input
-    .arvalid           ( cfg_arvalid       ), // input
-    .arready           ( cfg_arready       ), // output
+    .araddr              ( cfg_araddr          ), // input
+    .arvalid             ( cfg_arvalid         ), // input
+    .arready             ( cfg_arready         ), // output
 
-    .rdata             ( cfg_rdata         ), // output
-    .rresp             ( cfg_rresp         ), // output
-    .rvalid            ( cfg_rvalid        ), // output
-    .rready            ( cfg_rready        ), // input
+    .rdata               ( cfg_rdata           ), // output
+    .rresp               ( cfg_rresp           ), // output
+    .rvalid              ( cfg_rvalid          ), // output
+    .rready              ( cfg_rready          ), // input
 
-    .cr_led_0          ( cr_led_0          ), // output
-    .cr_axi_address    ( cr_axi_address    ), // output
-    .cr_wdata          ( cr_wdata          ), // output
-    .cmd_mc_axi4_write ( cmd_mc_axi4_write ), // output
-    .cmd_mc_axi4_read  ( cmd_mc_axi4_read  ), // output
+    .sr_hardware_version ( sr_hardware_version ), // input
+    .sr_mc_axi4_rdata    ( '0                  ), // input
 
-    .sr_led_counter    ( sr_led_counter    ), // input
-    .sr_rdata          ( sr_rdata          )  // input
+    .cr_led_0            ( cr_led_0            ), // output
+    .cr_axi_address      ( cr_axi_address      ), // output
+    .cr_wdata            ( cr_wdata            ), // output
+
+    .cmd_mc_axi4_write   ( cmd_mc_axi4_write   ), // output
+    .cmd_mc_axi4_read    ( cmd_mc_axi4_read    ), // output
+
+    .sr_led_counter      ( sr_led_counter      ), // input
+    .sr_rdata            ( sr_rdata            )  // input
   );
 
 
@@ -541,48 +558,112 @@ module project_top #(
   // Cirrus CS5343 ADC, CS4344 DAC
   // -------------------------------------------------------------------------
   cs5343_i2s2 cs5343_i2s2_i0 (
-    .clk_mclk        ( clk_mclk         ), // input
-    .rst_n           ( rst_mclk_n       ), // input
-    .tx_mclk         ( cs_tx_mclk       ), // output
-    .tx_lrck         ( cs_tx_lrck       ), // output
-    .tx_sclk         ( cs_tx_sclk       ), // output
-    .tx_sdout        ( cs_tx_sdout      ), // output
-    .rx_mclk         ( cs_rx_mclk       ), // output
-    .rx_lrck         ( cs_rx_lrck       ), // output
-    .rx_sclk         ( cs_rx_sclk       ), // output
-    .rx_sdin         ( cs_rx_sdin       ), // input
-    .tx_axis_s_data  ( cs_axis_tx_data  ), // input
-    .tx_axis_s_valid ( cs_axis_tx_valid ), // input
-    .tx_axis_s_ready ( cs_axis_tx_ready ), // output
-    .tx_axis_s_last  ( cs_axis_tx_last  ), // input
-    .rx_axis_m_data  ( cs_axis_rx_data  ), // output
-    .rx_axis_m_valid ( cs_axis_rx_valid ), // output
-    .rx_axis_m_ready ( cs_axis_rx_ready ), // input
-    .rx_axis_m_last  ( cs_axis_rx_last  )  // output
+
+    // Clock and reset
+    .clk_mclk        ( clk_mclk     ), // input
+    .rst_n           ( rst_mclk_n   ), // input
+
+    // I/O Cirrus CS5343 (DAC)
+    .tx_mclk         ( cs_tx_mclk   ), // output
+    .tx_lrck         ( cs_tx_lrck   ), // output
+    .tx_sclk         ( cs_tx_sclk   ), // output
+    .tx_sdout        ( cs_tx_sdout  ), // output
+
+    // I/O Cirrus CS4344 (ADC)
+    .rx_mclk         ( cs_rx_mclk   ), // output
+    .rx_lrck         ( cs_rx_lrck   ), // output
+    .rx_sclk         ( cs_rx_sclk   ), // output
+    .rx_sdin         ( cs_rx_sdin   ), // input
+
+    // AXI-S DAC
+    .tx_axis_s_data  ( cs_dac_data  ), // input
+    .tx_axis_s_valid ( cs_dac_valid ), // input
+    .tx_axis_s_ready ( cs_dac_ready ), // output
+    .tx_axis_s_last  ( cs_dac_last  ), // input
+
+    // AXI-S ADC
+    .rx_axis_m_data  ( cs_adc_data  ), // output
+    .rx_axis_m_valid ( cs_adc_valid ), // output
+    .rx_axis_m_ready ( cs_adc_ready ), // input
+    .rx_axis_m_last  ( cs_adc_last  )  // output
   );
 
 
+  // CDC: Cirrus ADC to System clock
+  cdc_vector_sync #(
+    .DATA_WIDTH_P ( 25                         )
+  ) cdc_vector_sync_i0 (
+
+    // Clock and reset (Source)
+    .clk_src      ( clk_mclk                   ), // input
+    .rst_src_n    ( rst_mclk_n                 ), // input
+
+    // Clock and reset (Destination)
+    .clk_dst      ( clk                        ), // input
+    .rst_dst_n    ( rst_n                      ), // input
+
+    // Data (Source)
+    .ing_vector   ( {cs_adc_last, cs_adc_data} ), // input
+    .ing_valid    ( cs_adc_valid               ), // input
+    .ing_ready    ( cs_adc_ready               ), // output
+
+    // Data (Destination)
+    .egr_vector   ( {vc_adc_last, vc_adc_data} ), // output
+    .egr_valid    ( vc_adc_valid               ), // output
+    .egr_ready    ( vc_adc_ready               )  // input
+  );
+
+
+
+  // CDC: System clock to Cirrus DAC
+  cdc_vector_sync #(
+    .DATA_WIDTH_P ( 25                         )
+  ) cdc_vector_sync_i1 (
+
+    // Clock and reset (Source)
+    .clk_src      ( clk                        ), // input
+    .rst_src_n    ( rst_n                      ), // input
+
+    // Clock and reset (Destination)
+    .clk_dst      ( clk_mclk                   ), // input
+    .rst_dst_n    ( rst_mclk_n                 ), // input
+
+    // Data (Source)
+    .ing_vector   ( {vc_dac_last, vc_dac_data} ), // input
+    .ing_valid    ( vc_dac_valid               ), // input
+    .ing_ready    ( vc_dac_ready               ), // output
+
+    // Data (Destination)
+    .egr_vector   ( {cs_dac_last, cs_dac_data} ), // output
+    .egr_valid    ( cs_dac_valid               ), // output
+    .egr_ready    ( cs_dac_ready               )  // input
+  );
 
   // -------------------------------------------------------------------------
   // Audio Volume
   // -------------------------------------------------------------------------
   axis_volume_controller #(
-    .SWITCH_WIDTH ( 4                         ),
-    .DATA_WIDTH   ( 24                        )
+    .SWITCH_WIDTH ( 4                   ),
+    .DATA_WIDTH   ( 24                  )
   ) axis_volume_controller_i0 (
-    .clk          ( clk_mclk                  ), // input
-    .sw           ( {sw_1, sw_0, 1'b1, 1'b1 } ), // input
-    .s_axis_data  ( cs_axis_rx_data           ), // input
-    .s_axis_valid ( cs_axis_rx_valid          ), // input
-    .s_axis_ready ( cs_axis_rx_ready          ), // output
-    .s_axis_last  ( cs_axis_rx_last           ), // input
-    .m_axis_data  ( cs_axis_tx_data           ), // output
-    .m_axis_valid ( cs_axis_tx_valid          ), // output
-    .m_axis_ready ( cs_axis_tx_ready          ), // input
-    .m_axis_last  ( cs_axis_tx_last           )  // output
+
+    // Clock
+    .clk          ( clk                 ), // input
+    // Switches
+    .sw           ( {sw_1, sw_0, 2'b11} ), // input
+
+    // Audio in
+    .s_axis_data  ( vc_adc_data         ), // input
+    .s_axis_valid ( vc_adc_valid        ), // input
+    .s_axis_ready ( vc_adc_ready        ), // output
+    .s_axis_last  ( vc_adc_last         ), // input
+
+    // Audio out
+    .m_axis_data  ( vc_dac_data         ), // output
+    .m_axis_valid ( vc_dac_valid        ), // output
+    .m_axis_ready ( vc_dac_ready        ), // input
+    .m_axis_last  ( vc_dac_last         )  // output
   );
-
-
 
 endmodule
 

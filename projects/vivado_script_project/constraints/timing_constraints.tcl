@@ -3,3 +3,4 @@
 set_clock_groups -asynchronous -group [get_clocks clk_fpga_0] -group [get_clocks clk_mclk_int]
 set_property -quiet ASYNC_REG TRUE [get_cells -hier -regexp .*reset_synchronizer_core_i0/reset_origin_n.*]
 set_property -quiet ASYNC_REG TRUE [get_cells -hier -regexp .*io_synchronizer_core_i0/bit_egress.*]
+set_property -quiet ASYNC_REG TRUE [get_cells -hier -regexp .*cdc_bit_sync_core_i0/dst_bit.*]
