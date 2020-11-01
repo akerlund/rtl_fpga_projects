@@ -64,6 +64,7 @@ module register_axi_slave #(
     // ---------------------------------------------------------------------------
     // <PORTS>
     input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_hardware_version,
+    output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear,
 
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0,
     input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_led_counter,
@@ -178,6 +179,7 @@ module register_axi_slave #(
       cr_wdata          <= '0;
       cmd_mc_axi4_write <= '0;
       cmd_mc_axi4_read  <= '0;
+      cmd_irq_clear     <= '0;
 
     end
     else begin
@@ -185,6 +187,7 @@ module register_axi_slave #(
       // "<COMMANDS>"
       cmd_mc_axi4_write <= '0;
       cmd_mc_axi4_read  <= '0;
+      cmd_irq_clear     <= '0;
 
       if (write_enable) begin
 
@@ -226,6 +229,14 @@ module register_axi_slave #(
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
                 cmd_mc_axi4_read[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
+              end
+            end
+          end
+
+          5'h08: begin
+            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
+              if (wstrb[byte_index] == 1) begin
+                cmd_irq_clear <= 1;
               end
             end
           end
