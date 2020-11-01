@@ -21,3 +21,25 @@ Additional drivers can be found in
 /opt/Xilinx/Vivado/2019.2/data/xicom/cable_drivers/lin64/install_script/install_drivers
 ```
 
+## This Repository Is Using pre-commit
+
+Installing
+```bash
+pip3 install pre-commit
+```
+
+Enable automatic hook install when cloning repositories
+```bash
+git config --global init.templateDir ~/.git-template
+pre-commit init-templatedir ~/.git-template
+```
+
+Install in already clones repositories
+```bash
+pre-commit install
+```
+
+Add hooks to
+```
+.pre-commit-config.yml
+```
