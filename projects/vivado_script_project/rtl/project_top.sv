@@ -145,7 +145,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
-  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 0911;
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1811;
   localparam int                            NR_OF_MASTERS_C       = 2;
 
   typedef enum {
@@ -638,6 +638,8 @@ module project_top #(
     end
     else begin
 
+      irq_0         <= '0;
+
       if (cmd_irq_clear) begin
         irq_0_counter <= '0;
         irq_0         <= '0;
@@ -646,6 +648,7 @@ module project_top #(
       else if (irq_0_counter == 125000000-1) begin
         irq_0         <= '1;
         led_1         <= ~led_1;
+        irq_0_counter <= '0;
       end
       else begin
         irq_0_counter <= irq_0_counter + 1;
