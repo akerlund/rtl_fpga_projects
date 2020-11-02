@@ -73,7 +73,6 @@ sudo yum install perl-Data-Dumper
 sudo yum install perl-Text-ParseWords
 sudo yum install perl-Thread-Queue
 sudo yum install xz
-
 ```
 
 ### Design Flow Overview
@@ -97,3 +96,25 @@ Boot the system for testing
 petalinux-boot
 
 
+## This Repository Is Using pre-commit
+
+Installing
+```bash
+pip3 install pre-commit
+```
+
+Enable automatic hook install when cloning repositories
+```bash
+git config --global init.templateDir ~/.git-template
+pre-commit init-templatedir ~/.git-template
+```
+
+Install in already clones repositories
+```bash
+pre-commit install
+```
+
+Add hooks to
+```
+.pre-commit-config.yml
+```
