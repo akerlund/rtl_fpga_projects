@@ -322,7 +322,7 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
                            CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $_fclk_freq_mhz ] [get_bd_cells processing_system7_0]
   #set_property -dict [list CONFIG.PCW_IMPORT_BOARD_PRESET {/opt/Xilinx/Vivado/2020.1/data/boards/board_files/arty-z7-20/A.0/preset.xml}] [get_bd_cells processing_system7_0]
 
-  set_property -dict [list CONFIG.NUM_PORTS                    {1}]             $xlconcat_0
+  set_property -dict [list CONFIG.NUM_PORTS                    {2}]             $xlconcat_0
 
   # ----------------------------------------------------------------------------
   # Creating interface ports and connections
@@ -339,9 +339,8 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
   }
 
   # IRQ
-  #puts [get_bd_pins /$_bd_name/[lindex [dict get $_ip_interfaces irq] 0]]
-  #connect_bd_net [get_bd_pins processing_system7_0/IRQ_F2P] [get_bd_pins /$_bd_name/[lindex [dict get $_ip_interfaces irq] 0]]
   connect_bd_net [get_bd_pins bd_project_top_0/irq_0] [get_bd_pins xlconcat_0/In0]
+  connect_bd_net [get_bd_pins bd_project_top_0/irq_1] [get_bd_pins xlconcat_0/In1]
   connect_bd_net [get_bd_pins xlconcat_0/dout] [get_bd_pins processing_system7_0/IRQ_F2P]
 
   # Only if no AXI
@@ -447,6 +446,7 @@ set _ip_interfaces [dict create                          \
   resets  [list rst_n                                    \
           ]                                              \
   irq     [list irq_0                                    \
+                irq_1                                    \
           ]                                              \
   data_io [list [dict create name "led_0"       dir "O"] \
                 [dict create name "led_1"       dir "O"] \

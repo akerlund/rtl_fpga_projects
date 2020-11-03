@@ -53,6 +53,7 @@ module project_top #(
     input  wire                                   sw_1,
 
     output logic                                  irq_0,
+    output logic                                  irq_1,
 
     // ---------------------------------------------------------------------------
     // PL register AXI4 ports
@@ -606,6 +607,26 @@ module project_top #(
       cs_dac_valid_mux = cs_dac_valid0;
     end
   end
+
+
+  // -------------------------------------------------------------------------
+  // IRQ of AXI Read Channel
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
+    if (!rst_n) begin
+      irq_1 <= '0;
+    end
+    else begin
+
+      irq_1 <= '0;
+
+      if (mc_rvalid && mc_rready && mc_rlast) begin
+        irq_1 <= '1;
+      end
+
+    end
+  end
+
 
   // -------------------------------------------------------------------------
   // SW controlling LEDs
