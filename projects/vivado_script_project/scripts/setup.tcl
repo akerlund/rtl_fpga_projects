@@ -255,6 +255,11 @@ proc set_ip_interfaces {_ip_interfaces} {
 
   }
 
+  puts "INFO \[set_ip_interfaces\] Setting up the IP's interrupt interface(s)"
+  foreach _irq [dict get $_ip_interfaces irq] {
+    ipx::infer_bus_interface $_irq xilinx.com:signal:interrupt_rtl:1.0 [ipx::current_core]
+  }
+
   puts "INFO \[set_ip_interfaces\] Setting up the IP's data I/O interface(s)"
   foreach _io [dict get $_ip_interfaces data_io] {
     ipx::infer_bus_interface [dict get $_io name] xilinx.com:signal:data_rtl:1.0 [ipx::current_core]
@@ -294,18 +299,37 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
 
 
   create_bd_design $_bd_design_name
-  create_bd_cell -type ip -vlnv $_xip_vendor:$_xip_ip_library:$_xip_ip_name:1.0 $_bd_name
-  create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0
 
-  # Set up PS7 ports, clock frequency
+  puts "INFO \[create_block_design\] Cells"
+  set _user_ip             [create_bd_cell -type ip -vlnv $_xip_vendor:$_xip_ip_library:$_xip_ip_name:1.0 $_bd_name]
+  set processing_system7_0 [create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0]
+  set xlconcat_0           [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0]
+
+  puts "INFO \[create_block_design\] Config"
+
+  # Run this automation first because it will reset any previous congirations you have made
   apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 -config {make_external "FIXED_IO, DDR" apply_board_preset "1" Master "Disable" Slave "Disable"} [get_bd_cells processing_system7_0]
-  set_property -dict [list CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $_fclk_freq_mhz] [get_bd_cells processing_system7_0]
+
+  # ----------------------------------------------------------------------------
+  # Properites
+  # ----------------------------------------------------------------------------
+
+  #set_property -dict [list CONFIG.preset                          {ZC702*}]        [get_bd_cells processing_system7_0]
+  set_property -dict [list CONFIG.PCW_USE_S_AXI_HP0            {1}             \
+                           CONFIG.PCW_USE_FABRIC_INTERRUPT     {1}             \
+                           CONFIG.PCW_IRQ_F2P_INTR             {1}             \
+                           CONFIG.PCW_TTC0_PERIPHERAL_ENABLE   {0}             \
+                           CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ $_fclk_freq_mhz ] [get_bd_cells processing_system7_0]
+  #set_property -dict [list CONFIG.PCW_IMPORT_BOARD_PRESET {/opt/Xilinx/Vivado/2020.1/data/boards/board_files/arty-z7-20/A.0/preset.xml}] [get_bd_cells processing_system7_0]
+
+  set_property -dict [list CONFIG.NUM_PORTS                    {2}]             $xlconcat_0
+
+  # ----------------------------------------------------------------------------
+  # Creating interface ports and connections
+  # ----------------------------------------------------------------------------
 
   # Connect IP's AXI4 ports
   apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {Auto} Clk_slave {Auto} Clk_xbar {Auto} Master {/processing_system7_0/M_AXI_GP0} Slave {/$_bd_name/cfg} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins $_bd_name/cfg]
-  #apply_bd_automation -rule xilinx.com:bd_rule:clkrst -config { Clk {/processing_system7_0/FCLK_CLK0 (100 MHz)} Freq {100} Ref_Clk0 {} Ref_Clk1 {} Ref_Clk2 {}}  [get_bd_pins $_bd_name/clk]
-
-  set_property -dict [list CONFIG.PCW_USE_S_AXI_HP0 {1}] [get_bd_cells processing_system7_0]
   apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/processing_system7_0/FCLK_CLK0 (125 MHz)} Clk_slave {Auto} Clk_xbar {Auto} Master {/bd_project_top_0/mc} Slave {/processing_system7_0/S_AXI_HP0} ddr_seg {Auto} intc_ip {New AXI Interconnect} master_apm {0}}  [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
 
   # Create ports in the block design and connect them to the top module
@@ -314,22 +338,21 @@ proc create_block_design {_xip_properties _ip_interfaces _fclk_freq_mhz _bd_desi
     connect_bd_net [get_bd_pins /$_bd_name/[dict get $_io name]] [get_bd_ports [dict get $_io name]]
   }
 
+  # IRQ
+  connect_bd_net [get_bd_pins bd_project_top_0/irq_0] [get_bd_pins xlconcat_0/In0]
+  connect_bd_net [get_bd_pins bd_project_top_0/irq_1] [get_bd_pins xlconcat_0/In1]
+  connect_bd_net [get_bd_pins xlconcat_0/dout] [get_bd_pins processing_system7_0/IRQ_F2P]
+
   # Only if no AXI
   #connect_bd_net [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/FCLK_CLK0]
 
-  #set_property range 512 [get_bd_addr_segs {processing_system7_0/Data/SEG_bd_project_top_0_reg0}]
-  #set_property offset 0x43D00000 [get_bd_addr_segs {processing_system7_0/Data/SEG_bd_project_top_0_reg0}]
+  # ----------------------------------------------------------------------------
+  # Finish
+  # ----------------------------------------------------------------------------
 
-
-
+  regenerate_bd_layout
   validate_bd_design
   save_bd_design
-
-  # create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0
-  # apply_bd_automation -rule xilinx.com:bd_rule:axi4 -config { Clk_master {/processing_system7_0/FCLK_CLK0 (125 MHz)} Clk_slave {Auto} Clk_xbar {/processing_system7_0/FCLK_CLK0 (125 MHz)} Master {/processing_system7_0/M_AXI_GP0} Slave {/axi_dma_0/S_AXI_LITE} ddr_seg {Auto} intc_ip {/ps7_0_axi_periph} master_apm {0}}  [get_bd_intf_pins axi_dma_0/S_AXI_LITE]
-  # set_property -dict [list CONFIG.PCW_USE_S_AXI_HP0 {1}] [get_bd_cells processing_system7_0]
-  #
-
 }
 
 
@@ -421,6 +444,9 @@ set _ip_interfaces [dict create                          \
   clocks  [list [dict create name clk freq_hz 125000000] \
           ]                                              \
   resets  [list rst_n                                    \
+          ]                                              \
+  irq     [list irq_0                                    \
+                irq_1                                    \
           ]                                              \
   data_io [list [dict create name "led_0"       dir "O"] \
                 [dict create name "led_1"       dir "O"] \

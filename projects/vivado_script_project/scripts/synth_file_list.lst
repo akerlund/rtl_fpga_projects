@@ -8,6 +8,9 @@ submodules/rtl_common_design/modules/synchronizers/cdc_vector_sync/rtl/cdc_vecto
 submodules/rtl_common_design/modules/mechanics/button/rtl/button_core.sv
 submodules/rtl_common_design/modules/axi4/axi4_write_arbiter/rtl/axi4_write_arbiter.sv
 submodules/rtl_common_design/modules/axi4/axi4_read_arbiter/rtl/axi4_read_arbiter.sv
+submodules/rtl_common_design/modules/memory/reg/rtl/reg_sp_rf.sv
+submodules/rtl_common_design/modules/fifo/synchronous_fifo/rtl/synchronous_fifo_register.sv
+submodules/rtl_common_design/modules/fifo/synchronous_fifo/rtl/synchronous_fifo.sv
 components/arty_z7_buttons/rtl/buttons_top.sv
 components/cs5343/rtl/cs5343_car.sv
 components/cs5343/rtl/cs5343_i2s2.sv

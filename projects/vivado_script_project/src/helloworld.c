@@ -1,33 +1,11 @@
-////////////////////////////////////////////////////////////////////////////////
-//
-// Copyright (C) 2020 Fredrik Åkerlund
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-//
-// Description:
-//
-// Development application for the Arty-Z7 development board.
-//
-//
-////////////////////////////////////////////////////////////////////////////////
-
 #include <stdio.h>
 #include "platform.h"
 #include "xil_printf.h"
-#include "xil_io.h"
+#include "xscugic.h"
+#include "xuartps.h"
 
-// AXI addresses to the configuration slave
+
+// AXI addresses to the FPGA
 #define FPGA_BASEADDR          0x43C00000
 #define CR_LED_0_ADDR          0
 #define CR_AXI_ADDRESS_ADDR    4
@@ -36,63 +14,262 @@
 #define CMD_MC_AXI4_READ_ADDR  16
 #define SR_LED_COUNTER_ADDR    20
 #define SR_MC_AXI4_RDATA_ADDR  24
+#define SR_HW_VERSION_ADDR     28
 
-void reg_write(int baseaddr, int offset, int value);
-int  reg_read(int baseaddr, int offset);
+// Constants
+static const unsigned char LENGTH_8_BITS_C  = 0xAA;
+static const unsigned char LENGTH_16_BITS_C = 0x55;
 
-int main(){
+// IRQ
+extern XScuGic InterruptController;
+extern XScuGic_Config *GicConfig;
 
-  volatile int delay;
-  volatile int led_0 = 0;
-  volatile int rdata = 0;
+// UART
+#define UART_BUFFER_SIZE_C 256
+extern u8 irq_read_uart;
+static u8 uart_tx_buffer[UART_BUFFER_SIZE_C];
+volatile int is_parsing;
+volatile u8 uart_tx_wr_addr;
+volatile u8 uart_tx_rd_addr;
+static u8 uart_rx_buffer[UART_BUFFER_SIZE_C];
+volatile u8 uart_rx_wr_addr;
+volatile u8 uart_rx_rd_addr;
+
+// UART parsing
+typedef enum {
+  RX_IDLE_E,
+  RX_LENGTH_HIGH_E,
+  RX_LENGTH_LOW_E,
+  RX_READ_PAYLOAD_E,
+  RX_READ_CRC_LOW_E,
+  RX_READ_CRC_HIGH_E
+} rx_state_t;
+
+rx_state_t rx_state;
+volatile int rx_crc_enabled;
+volatile u8  rx_buffer[UART_BUFFER_SIZE_C];
+volatile int rx_length;
+volatile int rx_addr;
+volatile int rx_crc_high;
+volatile int rx_crc_low;
+
+extern XUartPs Uart_PS;
+
+void nops(unsigned int num);
+void parse_uart_rx();
+void handle_rx_data();
+int  get_axi_offset();
+int  get_axi_wdata();
+
+
+extern int  UartPsPolledExample(u16 DeviceId);
+extern void ExtIrq_Handler(void *InstancePtr);
+extern int  interrupt_init();
+
+uint32_t buffer_get_uint32(const u8 *buffer, int32_t *index);
+
+int main() {
+
+  int Status;
+
+  // Reset
+  irq_read_uart      = 0;
+  uart_tx_wr_addr    = 0;
+  uart_tx_rd_addr    = 0;
+  uart_rx_wr_addr    = 0;
+  uart_rx_rd_addr    = 0;
+  rx_state           = RX_IDLE_E;
+  rx_addr            = 0;
+  rx_length          = 0;
+  rx_crc_high        = 0;
+  rx_crc_low         = 0;
+  is_parsing = 0;
 
   init_platform();
-  print("Hello World\n\r");
+
+  xil_printf("Hello World\r\n");
+
+  interrupt_init();
+
+  Status = UartPsPolledExample(XPAR_XUARTPS_0_DEVICE_ID);
+
+  if (Status != XST_SUCCESS) {
+    xil_printf("ERROR [uart] UART Polled Mode Example Test Failed\r\n");
+    return XST_FAILURE;
+  } else {
+    xil_printf("INFO [uart] UART success\r\n");
+  }
 
   while (1) {
 
-	for (delay = 0; delay < 40000000; delay++) {};
+    if (irq_read_uart) {
+      uart_rx_wr_addr += XUartPs_Recv(&Uart_PS, &uart_rx_buffer[uart_rx_wr_addr], (UART_BUFFER_SIZE_C - uart_rx_wr_addr));
+      irq_read_uart = 0;
+    }
 
-    printf("--------------------------------------------------------------------------------\n\r");
-    reg_write(FPGA_BASEADDR, CR_LED_0_ADDR, led_0++);
-    printf("CR_LED_0_ADDR (w)      = %d\n\r", led_0);
+    if (uart_rx_rd_addr != uart_rx_wr_addr && !is_parsing) {
+    	is_parsing = 1;
+        parse_uart_rx();
+        is_parsing = 0;
+    }
 
-    rdata = reg_read(FPGA_BASEADDR, CR_LED_0_ADDR);
-    printf("CR_LED_0_ADDR (r)      = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, CR_AXI_ADDRESS_ADDR);
-    printf("CR_AXI_ADDRESS_ADDR    = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, CR_WDATA_ADDR);
-    printf("CR_WDATA_ADDR          = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, CMD_MC_AXI4_WRITE_ADDR);
-    printf("CMD_MC_AXI4_WRITE_ADDR = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, CMD_MC_AXI4_READ_ADDR);
-    printf("CMD_MC_AXI4_READ_ADDR  = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, SR_LED_COUNTER_ADDR);
-    printf("SR_LED_COUNTER_ADDR    = %d\n\r", rdata);
-
-    rdata = reg_read(FPGA_BASEADDR, SR_MC_AXI4_RDATA_ADDR);
-    printf("SR_MC_AXI4_RDATA_ADDR  = %d\n\r", rdata);
+    if (uart_rx_wr_addr == UART_BUFFER_SIZE_C) {
+      uart_rx_wr_addr = 0;
+    }
 
   }
 
   cleanup_platform();
-
   return 0;
 }
 
+void parse_uart_rx() {
 
-void reg_write(int baseaddr, int offset, int value){
-  Xil_Out32(baseaddr + offset, value);
+  u8 rx_data;
+  int nr_of_bytes = uart_rx_wr_addr - uart_rx_rd_addr;
+
+  for (int i = uart_rx_rd_addr; i < uart_rx_rd_addr+nr_of_bytes; i++) {
+
+    rx_data = uart_rx_buffer[i];
+
+    switch (rx_state) {
+
+      case RX_IDLE_E:
+
+        rx_addr    = 0;
+        rx_length  = 0;
+
+        if (rx_data == LENGTH_8_BITS_C) {
+          rx_state = RX_LENGTH_LOW_E;
+        } else if (rx_data == LENGTH_16_BITS_C) {
+          rx_state = RX_LENGTH_HIGH_E;
+        }
+        break;
+
+
+      case RX_LENGTH_HIGH_E:
+
+        rx_length  = (unsigned int)rx_data << 8;
+        rx_state   = RX_LENGTH_LOW_E;
+        break;
+
+
+      case RX_LENGTH_LOW_E:
+
+        rx_length |= (unsigned int)rx_data;
+
+        if (rx_length <= UART_BUFFER_SIZE_C && rx_length > 0) {
+          rx_state = RX_READ_PAYLOAD_E;
+        }
+        break;
+
+
+      case RX_READ_PAYLOAD_E:
+
+        rx_buffer[rx_addr++] = rx_data;
+
+        if (rx_addr == rx_length) {
+
+          if (rx_crc_enabled) {
+            rx_state = RX_READ_CRC_LOW_E;
+          } else {
+            handle_rx_data();
+            rx_state = RX_IDLE_E;
+          }
+        }
+        break;
+
+
+      case RX_READ_CRC_LOW_E:
+
+        rx_state    = RX_READ_CRC_HIGH_E;
+        rx_crc_high = rx_data;
+        break;
+
+
+      case RX_READ_CRC_HIGH_E:
+
+        rx_crc_low = rx_data;
+
+        //if (crc_16(rx_buffer, rx_length) == ((unsigned short)rx_crc_high << 8 | (unsigned short)rx_crc_low)) {
+        //  handle_rx_data();
+        //}
+
+        rx_state = RX_IDLE_E;
+        break;
+
+
+      default:
+        rx_state = RX_IDLE_E;
+        break;
+    }
+  }
+
+  uart_rx_rd_addr = uart_rx_wr_addr;
+
+}
+
+int32_t qwe;
+
+void handle_rx_data() {
+
+  uint32_t addr;
+  qwe = 1;
+
+  xil_printf("rx_length = (%d)\r", rx_length);
+
+  if (rx_buffer[0] == 'W' && rx_length == 9) {
+	xil_printf("INFO [rx] waddr(%d) wdata(%d)\r", get_axi_offset(), get_axi_wdata());
+    //reg_write(FPGA_BASEADDR, get_axi_offset(), get_axi_wdata());
+  }
+
+  if (rx_buffer[0] == 'R' && rx_length == 5) {
+	addr = buffer_get_uint32((const)rx_buffer, &qwe);
+    xil_printf("INFO [rx] raddr(%d)\r", addr);
+    //reg_read(FPGA_BASEADDR, get_axi_offset());
+  }
+
 }
 
 
-int reg_read(int baseaddr, int offset){
-  int temp = 0;
-  temp = Xil_In32(baseaddr + offset);
-  return(temp);
+
+
+
+int get_axi_offset() {
+  int offset = 0;
+  offset += rx_buffer[1] << 24;
+  offset += rx_buffer[2] << 16;
+  offset += rx_buffer[3] << 8;
+  offset += rx_buffer[4] << 0;
+  return offset;
+}
+
+
+int get_axi_wdata() {
+  int wdata = 0;
+  wdata += rx_buffer[5] << 24;
+  wdata += rx_buffer[6] << 16;
+  wdata += rx_buffer[7] << 8;
+  wdata += rx_buffer[8] << 0;
+  return wdata;
+}
+
+
+
+void nops(unsigned int num) {
+  for(int i = 0; i < num; i++) {
+    asm("nop");
+  }
+}
+
+
+
+uint32_t buffer_get_uint32(const u8 *buffer, int32_t *index) {
+
+  uint32_t res =  ((uint32_t) buffer[*index]     << 24) +
+                  ((uint32_t) buffer[*index + 1] << 16) +
+                  ((uint32_t) buffer[*index + 2] << 8)  +
+                  ((uint32_t) buffer[*index + 3]);
+  *index += 4;
+  return res;
 }

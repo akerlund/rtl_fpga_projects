@@ -52,6 +52,9 @@ module project_top #(
     input  wire                                   sw_0,
     input  wire                                   sw_1,
 
+    output logic                                  irq_0,
+    output logic                                  irq_1,
+
     // ---------------------------------------------------------------------------
     // PL register AXI4 ports
     // ---------------------------------------------------------------------------
@@ -143,7 +146,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
-  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1711;
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1811;
   localparam int                            NR_OF_MASTERS_C       = 2;
 
   typedef enum {
@@ -157,6 +160,11 @@ module project_top #(
     AR_WAIT_FOR_HS_E,
     R_WAIT_FOR_HS_E
   } read_state_t;
+
+  // -------------------------------------------------------------------------
+  // IRQ
+  // -------------------------------------------------------------------------
+  logic [AXI_DATA_WIDTH_P-1 : 0] irq_0_counter;
 
   // -------------------------------------------------------------------------
   // Toggling LED
@@ -185,6 +193,7 @@ module project_top #(
   logic [AXI_DATA_WIDTH_P-1 : 0] sr_mc_axi4_rdata;
   logic [AXI_DATA_WIDTH_P-1 : 0] cr_axi_address;
   logic [AXI_DATA_WIDTH_P-1 : 0] cr_wdata;
+  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear;
   logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_write;
   logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_read;
   logic [AXI_DATA_WIDTH_P-1 : 0] sr_rdata;
@@ -244,16 +253,21 @@ module project_top #(
   // -------------------------------------------------------------------------
   // Cirrus clock and reset
   // -------------------------------------------------------------------------
-  logic clk_mclk;
-  logic rst_mclk_n;
+  logic          clk_mclk;
+  logic          rst_mclk_n;
 
   // -------------------------------------------------------------------------
   // I2S2 PMOD
   // -------------------------------------------------------------------------
-  logic [23 : 0] cs_dac_data;
+
+  logic [23 : 0] cs_dac_data_mux;
+  logic          cs_dac_last_mux;
+  logic          cs_dac_valid_mux;
   logic          cs_dac_ready;
-  logic          cs_dac_last;
-  logic          cs_dac_valid;
+
+  logic [23 : 0] cs_dac_data0;
+  logic          cs_dac_last0;
+  logic          cs_dac_valid0;
   logic [23 : 0] cs_adc_data;
   logic          cs_adc_ready;
   logic          cs_adc_valid;
@@ -279,11 +293,340 @@ module project_top #(
   logic          vc_dac_ready;
 
   // -------------------------------------------------------------------------
+  // AXI4 Recording
+  // -------------------------------------------------------------------------
+
+  logic                          sr_rec_enabled;
+  logic         [0 : 1] [23 : 0] data_buffer;
+  logic                          data_counter;
+
+  // Write Address Channel
+  logic   [AXI_ID_WIDTH_P-1 : 0] rec_awid;
+  logic [AXI_ADDR_WIDTH_P-1 : 0] rec_awaddr;
+  logic                  [7 : 0] rec_awlen;
+  logic                          rec_awvalid;
+  logic                          rec_awready;
+
+  // Write Data Channel
+  logic [AXI_DATA_WIDTH_P-1 : 0] rec_wdata;
+  logic [AXI_STRB_WIDTH_P-1 : 0] rec_wstrb;
+  logic                          rec_wlast;
+  logic                          rec_wvalid;
+  logic                          rec_wready;
+
+  // -------------------------------------------------------------------------
+  // AXI4 Playback
+  // -------------------------------------------------------------------------
+
+  // Read Address Channel
+  logic   [AXI_ID_WIDTH_P-1 : 0] play_arid;
+  logic [AXI_ADDR_WIDTH_P-1 : 0] play_araddr;
+  logic                  [7 : 0] play_arlen;
+  logic                          play_arvalid;
+  logic                          play_arready;
+
+  // Read Data Channel
+  logic   [AXI_ID_WIDTH_P-1 : 0] play_rid;
+  logic [AXI_DATA_WIDTH_P-1 : 0] play_rdata;
+  logic                          play_rlast;
+  logic                          play_rvalid;
+  logic                          play_rready;
+
+  // -------------------------------------------------------------------------
   // Assignments
   // -------------------------------------------------------------------------
 
   assign sr_led_counter = led_3_counter;
   assign vc_volume      = {switch_1, switch_0, 2'b11};
+
+  // Write Address Channel
+  assign mst_awid[0]    = rec_awid;
+  assign mst_awaddr[0]  = rec_awaddr;
+  assign mst_awlen[0]   = rec_awlen;
+  assign mst_awvalid[0] = rec_awvalid;
+  assign rec_awready    = mst_awready[0];
+
+  // Write Data Channel
+  assign mst_wdata[0]   = rec_wdata;
+  assign mst_wstrb[0]   = rec_wstrb;
+  assign mst_wlast[0]   = rec_wlast;
+  assign mst_wvalid[0]  = rec_wvalid;
+  assign rec_wready     = mst_wready[0];
+
+  // Read Address Channel
+  assign mst_arid[0]    = play_arid;
+  assign mst_araddr[0]  = play_araddr;
+  assign mst_arlen[0]   = play_arlen;
+  assign mst_arvalid[0] = play_arvalid;
+  assign play_arready   = mst_arready[0];
+
+  // Read Data Channel
+  assign play_rid      = mst_rid[0];
+  assign play_rdata    = mst_rdata[0];
+  assign play_rlast    = mst_rlast;
+  assign play_rvalid   = mst_rvalid[0];
+  assign mst_rready[0] = play_rready;
+
+  // -------------------------------------------------------------------------
+  // Record to memory
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : mem_recorder_p0
+    if (!rst_n) begin
+
+      sr_rec_enabled <= '0;
+      data_buffer    <= '0;
+      data_counter   <= '0;
+
+      rec_awid    <= '0;
+      rec_awaddr  <= '0;
+      rec_awlen   <= '0;
+      rec_awvalid <= '0;
+      rec_wdata   <= '0;
+      rec_wstrb   <= '0;
+      rec_wlast   <= '0;
+      rec_wvalid  <= '0;
+
+    end
+    else begin
+
+      rec_awid   <= '0;
+      rec_awlen  <= '0;
+      rec_wdata  <= {'0, vc_adc_data};
+      rec_wstrb  <= '1;
+      rec_wvalid <= '0;
+
+      if (btn_0_tgl) begin
+        sr_rec_enabled <= ~sr_rec_enabled;
+      end
+
+      if (sr_rec_enabled) begin
+
+        // If Write Data is handshaken, stop
+        if (rec_wvalid && rec_wready) begin
+          rec_wvalid <= '0;
+        end
+        // If there is new data in the FIFO
+        else if (sr_fill_level_rfi != 0 && !rec_awvalid) begin
+          rec_awvalid <= '1;
+        end
+        // If the Write Address has been sent
+        else if (rec_awvalid) begin
+
+          // The  Write Address in handshaken
+          if (rec_awready) begin
+            rec_awaddr  <= rec_awaddr + 1;
+            rec_awvalid <= '0;
+            rec_wvalid  <= '1;
+            rec_wlast   <= '1;
+          end
+        end
+      end
+    end
+  end
+
+  logic          rfi_ing_enable;
+  logic          rfi_ing_full;
+
+  logic          rfi_egr_enable;
+  logic [23 : 0] rfi_egr_data;
+  logic          rfi_egr_empty;
+
+  logic  [2 : 0] sr_fill_level_rfi;
+
+  assign rfi_ing_enable = vc_adc_valid && vc_adc_ready && sr_rec_enabled && !rfi_ing_full;
+  assign rfi_egr_enable = rec_awvalid  && rec_awready  && !rfi_egr_empty;
+
+
+  synchronous_fifo #(
+    .DATA_WIDTH_P         ( 24                ),
+    .ADDR_WIDTH_P         ( 2                 )
+  ) synchronous_fifo_i0 (
+
+    // Clock and reset
+    .clk                  ( clk               ), // input
+    .rst_n                ( rst_n             ), // input
+
+    // Ingress
+    .ing_enable           ( rfi_ing_enable    ), // input
+    .ing_data             ( vc_dac_data       ), // input
+    .ing_full             ( rfi_ing_full      ), // output
+    .ing_almost_full      (                   ), // output
+
+    // Egress
+    .egr_enable           ( rfi_egr_enable    ), // input
+    .egr_data             ( rfi_egr_data      ), // output
+    .egr_empty            ( rfi_egr_empty     ), // output
+
+    // Configuration and status registers
+    .sr_fill_level        ( sr_fill_level_rfi ), // output
+    .sr_max_fill_level    (                   ), // output
+    .cr_almost_full_level ( '0                )  // input
+  );
+
+
+  // -------------------------------------------------------------------------
+  // Playback from memory
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : mem_playback_p0
+    if (!rst_n) begin
+
+      // Read Address Channel
+      play_arid    <= '0;
+      play_araddr  <= '0;
+      play_arlen   <= '0;
+      play_arvalid <= '0;
+
+      // Read Data Channel
+      play_rready  <= '0;
+
+    end
+    else begin
+
+      // Read Address Channel
+      play_arid    <= '0;
+      play_arlen   <= 0;
+
+      if (play_arvalid) begin
+
+        if (play_arready) begin
+          play_arvalid <= '0;
+          play_rready  <= '1;
+        end
+
+      end
+      else if (play_rready) begin
+
+        if (play_rvalid) begin
+          play_rready <= '0;
+          play_araddr <= play_araddr + 1;
+        end
+
+      end
+      else if (play_araddr != rec_awaddr) begin
+
+        play_arvalid <= '1;
+
+      end
+
+    end
+  end
+
+  logic          pfi_ing_enable;
+  logic [23 : 0] pfi_ing_data;
+  logic          pfi_ing_full;
+
+  logic          pfi_egr_enable;
+  logic [23 : 0] pfi_egr_data;
+  logic          pfi_egr_empty;
+
+  logic  [2 : 0] sr_fill_level_pfi;
+
+  assign pfi_ing_enable = play_rvalid && play_rready && !pfi_ing_full;
+  //assign pfi_egr_enable = rec_awvalid  && rec_awready  && !pfi_egr_empty;
+  assign pfi_ing_data  = play_rdata[23 : 0];
+
+  synchronous_fifo #(
+    .DATA_WIDTH_P         ( 24                ),
+    .ADDR_WIDTH_P         ( 2                 )
+  ) synchronous_fifo_i1 (
+
+    // Clock and reset
+    .clk                  ( clk               ), // input
+    .rst_n                ( rst_n             ), // input
+
+    // Ingress
+    .ing_enable           ( pfi_ing_enable    ), // input
+    .ing_data             ( pfi_ing_data      ), // input
+    .ing_full             ( pfi_ing_full      ), // output
+    .ing_almost_full      (                   ), // output
+
+    // Egress
+    .egr_enable           ( pfi_egr_enable    ), // input
+    .egr_data             ( pfi_egr_data      ), // output
+    .egr_empty            ( pfi_egr_empty     ), // output
+
+    // Configuration and status registers
+    .sr_fill_level        ( sr_fill_level_pfi ), // output
+    .sr_max_fill_level    (                   ), // output
+    .cr_almost_full_level ( '0                )  // input
+  );
+
+  logic         pfi_read_fifo;
+  logic [1 : 0] pfi_read_counter;
+
+  logic         pfi_ready;
+  logic         pfi_valid;
+  logic         pfi_last;
+
+  always_ff @(posedge clk or negedge rst_n) begin : output_reader_p0
+    if (!rst_n) begin
+
+      pfi_read_fifo    <= '0;
+      pfi_read_counter <= '0;
+      pfi_valid        <= '0;
+      pfi_last         <= '0;
+    end
+    else begin
+
+      pfi_last <= '0;
+
+      if (sr_fill_level_pfi >= 2 && !pfi_read_fifo) begin
+        pfi_read_fifo    <= '1;
+        pfi_read_counter <= '0;
+      end
+
+      if (pfi_read_fifo && pfi_ready) begin
+        pfi_egr_enable   <= '1;
+        pfi_valid        <= '1;
+        pfi_read_counter <= pfi_read_counter + 1;
+        if (pfi_read_counter != 0) begin
+          pfi_last      <= '1;
+          pfi_read_fifo <= '0;
+        end
+      end
+
+    end
+  end
+
+  always_comb begin
+
+    cs_dac_data_mux  = '0;
+    cs_dac_last_mux  = '0;
+    cs_dac_valid_mux = '0;
+    pfi_ready        = '0;
+
+    if (switch_0) begin
+      cs_dac_data_mux  = pfi_egr_data;
+      cs_dac_last_mux  = pfi_last;
+      cs_dac_valid_mux = pfi_valid;
+      pfi_ready        = cs_dac_ready;
+    end
+    else begin
+      cs_dac_data_mux  = cs_dac_data0;
+      cs_dac_last_mux  = cs_dac_last0;
+      cs_dac_valid_mux = cs_dac_valid0;
+    end
+  end
+
+
+  // -------------------------------------------------------------------------
+  // IRQ of AXI Read Channel
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
+    if (!rst_n) begin
+      irq_1 <= '0;
+    end
+    else begin
+
+      irq_1 <= '0;
+
+      if (mc_rvalid && mc_rready && mc_rlast) begin
+        irq_1 <= '1;
+      end
+
+    end
+  end
+
 
   // -------------------------------------------------------------------------
   // SW controlling LEDs
@@ -292,40 +635,44 @@ module project_top #(
     if (!rst_n) begin
 
       led_0 <= '0;
-      led_1 <= '0;
 
     end
     else begin
 
       led_0 <= cr_led_0[0];
 
-      if (btn_1_tgl) begin
-        led_1 <= ~led_1;
-      end
-
     end
   end
 
 
   // -------------------------------------------------------------------------
-  // Clock 'clk_sys' (125MHz) with LED process
+  // Interrupt 'irq_0'
   // -------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
+  always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
 
     if (!rst_n) begin
 
-      led_3         <= '0;
-      led_3_counter <= '0;
+      irq_0         <= '0;
+      irq_0_counter <= '0;
+      led_1         <= '0;
 
     end
     else begin
 
-      if (led_3_counter == 62500000-1) begin
-        led_3         <= ~led_3;
-        led_3_counter <= 0;
+      irq_0         <= '0;
+
+      if (cmd_irq_clear) begin
+        irq_0_counter <= '0;
+        irq_0         <= '0;
+        led_1         <= '0;
+      end
+      else if (irq_0_counter == 125000000-1) begin
+        irq_0         <= '1;
+        led_1         <= ~led_1;
+        irq_0_counter <= '0;
       end
       else begin
-        led_3_counter <= led_3_counter + 1;
+        irq_0_counter <= irq_0_counter + 1;
       end
 
     end
@@ -356,6 +703,30 @@ module project_top #(
     end
   end
 
+
+  // -------------------------------------------------------------------------
+  // Clock 'clk_sys' (125MHz) with LED process
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
+
+    if (!rst_n) begin
+
+      led_3         <= '0;
+      led_3_counter <= '0;
+
+    end
+    else begin
+
+      if (led_3_counter == 62500000-1) begin
+        led_3         <= ~led_3;
+        led_3_counter <= 0;
+      end
+      else begin
+        led_3_counter <= led_3_counter + 1;
+      end
+
+    end
+  end
 
   // -------------------------------------------------------------------------
   // Process for routing SW commands to AXI4 writes to the DDR
@@ -499,6 +870,7 @@ module project_top #(
     .rready              ( cfg_rready            ), // input
 
     .sr_hardware_version ( SR_HARDWARE_VERSION_C ), // input
+    .cmd_irq_clear       ( cmd_irq_clear         ), // output
     .sr_mc_axi4_rdata    ( '0                    ), // input
 
     .cr_led_0            ( cr_led_0              ), // output
@@ -659,32 +1031,32 @@ module project_top #(
   cs5343_i2s2 cs5343_i2s2_i0 (
 
     // Clock and reset
-    .clk_mclk        ( clk_mclk     ), // input
-    .rst_n           ( rst_mclk_n   ), // input
+    .clk_mclk        ( clk_mclk         ), // input
+    .rst_n           ( rst_mclk_n       ), // input
 
     // I/O Cirrus CS5343 (DAC)
-    .tx_mclk         ( cs_tx_mclk   ), // output
-    .tx_lrck         ( cs_tx_lrck   ), // output
-    .tx_sclk         ( cs_tx_sclk   ), // output
-    .tx_sdout        ( cs_tx_sdout  ), // output
+    .tx_mclk         ( cs_tx_mclk       ), // output
+    .tx_lrck         ( cs_tx_lrck       ), // output
+    .tx_sclk         ( cs_tx_sclk       ), // output
+    .tx_sdout        ( cs_tx_sdout      ), // output
 
     // I/O Cirrus CS4344 (ADC)
-    .rx_mclk         ( cs_rx_mclk   ), // output
-    .rx_lrck         ( cs_rx_lrck   ), // output
-    .rx_sclk         ( cs_rx_sclk   ), // output
-    .rx_sdin         ( cs_rx_sdin   ), // input
+    .rx_mclk         ( cs_rx_mclk       ), // output
+    .rx_lrck         ( cs_rx_lrck       ), // output
+    .rx_sclk         ( cs_rx_sclk       ), // output
+    .rx_sdin         ( cs_rx_sdin       ), // input
 
     // AXI-S DAC
-    .tx_axis_s_data  ( cs_dac_data  ), // input
-    .tx_axis_s_valid ( cs_dac_valid ), // input
-    .tx_axis_s_ready ( cs_dac_ready ), // output
-    .tx_axis_s_last  ( cs_dac_last  ), // input
+    .tx_axis_s_data  ( cs_dac_data_mux  ), // input
+    .tx_axis_s_valid ( cs_dac_valid_mux ), // input
+    .tx_axis_s_ready ( cs_dac_ready     ), // output
+    .tx_axis_s_last  ( cs_dac_last_mux  ), // input
 
     // AXI-S ADC
-    .rx_axis_m_data  ( cs_adc_data  ), // output
-    .rx_axis_m_valid ( cs_adc_valid ), // output
-    .rx_axis_m_ready ( cs_adc_ready ), // input
-    .rx_axis_m_last  ( cs_adc_last  )  // output
+    .rx_axis_m_data  ( cs_adc_data      ), // output
+    .rx_axis_m_valid ( cs_adc_valid     ), // output
+    .rx_axis_m_ready ( cs_adc_ready     ), // input
+    .rx_axis_m_last  ( cs_adc_last      )  // output
   );
 
 
@@ -719,26 +1091,26 @@ module project_top #(
   // CDC: System clock to Cirrus DAC
   // -------------------------------------------------------------------------
   cdc_vector_sync #(
-    .DATA_WIDTH_P ( 25                         )
+    .DATA_WIDTH_P ( 25                           )
   ) cdc_vector_sync_i1 (
 
     // Clock and reset (Source)
-    .clk_src      ( clk                        ), // input
-    .rst_src_n    ( rst_n                      ), // input
+    .clk_src      ( clk                          ), // input
+    .rst_src_n    ( rst_n                        ), // input
 
     // Clock and reset (Destination)
-    .clk_dst      ( clk_mclk                   ), // input
-    .rst_dst_n    ( rst_mclk_n                 ), // input
+    .clk_dst      ( clk_mclk                     ), // input
+    .rst_dst_n    ( rst_mclk_n                   ), // input
 
     // Data (Source)
-    .ing_vector   ( {vc_dac_last, vc_dac_data} ), // input
-    .ing_valid    ( vc_dac_valid               ), // input
-    .ing_ready    ( vc_dac_ready               ), // output
+    .ing_vector   ( {vc_dac_last, vc_dac_data}   ), // input
+    .ing_valid    ( vc_dac_valid                 ), // input
+    .ing_ready    ( vc_dac_ready                 ), // output
 
     // Data (Destination)
-    .egr_vector   ( {cs_dac_last, cs_dac_data} ), // output
-    .egr_valid    ( cs_dac_valid               ), // output
-    .egr_ready    ( cs_dac_ready               )  // input
+    .egr_vector   ( {cs_dac_last0, cs_dac_data0} ), // output
+    .egr_valid    ( cs_dac_valid0                ), // output
+    .egr_ready    ( cs_dac_ready                 )  // input
   );
 
   // -------------------------------------------------------------------------
