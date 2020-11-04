@@ -3,6 +3,7 @@
 #include "xil_printf.h"
 #include "xscugic.h"
 #include "xuartps.h"
+#include "xparameters.h"
 
 
 // AXI addresses to the FPGA
@@ -27,7 +28,7 @@ extern XScuGic_Config *GicConfig;
 // UART
 #define UART_BUFFER_SIZE_C 256
 extern u8 irq_read_uart;
-static u8 uart_tx_buffer[UART_BUFFER_SIZE_C];
+//static u8 uart_tx_buffer[UART_BUFFER_SIZE_C];
 volatile int is_parsing;
 volatile u8 uart_tx_wr_addr;
 volatile u8 uart_tx_rd_addr;
@@ -47,7 +48,7 @@ typedef enum {
 
 rx_state_t rx_state;
 volatile int rx_crc_enabled;
-volatile u8  rx_buffer[UART_BUFFER_SIZE_C];
+static   u8  rx_buffer[UART_BUFFER_SIZE_C];
 volatile int rx_length;
 volatile int rx_addr;
 volatile int rx_crc_high;
@@ -60,30 +61,32 @@ void parse_uart_rx();
 void handle_rx_data();
 int  get_axi_offset();
 int  get_axi_wdata();
-
+void axi_write(int baseaddr, int offset, int value);
+int  axi_read(int baseaddr, int offset);
 
 extern int  UartPsPolledExample(u16 DeviceId);
 extern void ExtIrq_Handler(void *InstancePtr);
 extern int  interrupt_init();
 
-uint32_t buffer_get_uint32(const u8 *buffer, int32_t *index);
+uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index);
+uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index);
 
 int main() {
 
   int Status;
 
   // Reset
-  irq_read_uart      = 0;
-  uart_tx_wr_addr    = 0;
-  uart_tx_rd_addr    = 0;
-  uart_rx_wr_addr    = 0;
-  uart_rx_rd_addr    = 0;
-  rx_state           = RX_IDLE_E;
-  rx_addr            = 0;
-  rx_length          = 0;
-  rx_crc_high        = 0;
-  rx_crc_low         = 0;
-  is_parsing = 0;
+  irq_read_uart   = 0;
+  uart_tx_wr_addr = 0;
+  uart_tx_rd_addr = 0;
+  uart_rx_wr_addr = 0;
+  uart_rx_rd_addr = 0;
+  rx_state        = RX_IDLE_E;
+  rx_addr         = 0;
+  rx_length       = 0;
+  rx_crc_high     = 0;
+  rx_crc_low      = 0;
+  is_parsing      = 0;
 
   init_platform();
 
@@ -173,7 +176,7 @@ void parse_uart_rx() {
           if (rx_crc_enabled) {
             rx_state = RX_READ_CRC_LOW_E;
           } else {
-            handle_rx_data();
+            handle_rx_data(rx_buffer);
             rx_state = RX_IDLE_E;
           }
         }
@@ -209,51 +212,24 @@ void parse_uart_rx() {
 
 }
 
-int32_t qwe;
 
-void handle_rx_data() {
+void handle_rx_data(const uint8_t *buffer) {
 
+  int32_t  index = 1;
   uint32_t addr;
-  qwe = 1;
 
-  xil_printf("rx_length = (%d)\r", rx_length);
 
   if (rx_buffer[0] == 'W' && rx_length == 9) {
-	xil_printf("INFO [rx] waddr(%d) wdata(%d)\r", get_axi_offset(), get_axi_wdata());
+    xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", get_axi_offset(), get_axi_wdata());
     //reg_write(FPGA_BASEADDR, get_axi_offset(), get_axi_wdata());
   }
 
   if (rx_buffer[0] == 'R' && rx_length == 5) {
-	addr = buffer_get_uint32((const)rx_buffer, &qwe);
-    xil_printf("INFO [rx] raddr(%d)\r", addr);
-    //reg_read(FPGA_BASEADDR, get_axi_offset());
+
+    addr = buffer_get_uint32(buffer, &index);
+    xil_printf("INFO [rx] raddr(%u)\r", addr);
   }
-
 }
-
-
-
-
-
-int get_axi_offset() {
-  int offset = 0;
-  offset += rx_buffer[1] << 24;
-  offset += rx_buffer[2] << 16;
-  offset += rx_buffer[3] << 8;
-  offset += rx_buffer[4] << 0;
-  return offset;
-}
-
-
-int get_axi_wdata() {
-  int wdata = 0;
-  wdata += rx_buffer[5] << 24;
-  wdata += rx_buffer[6] << 16;
-  wdata += rx_buffer[7] << 8;
-  wdata += rx_buffer[8] << 0;
-  return wdata;
-}
-
 
 
 void nops(unsigned int num) {
@@ -264,12 +240,29 @@ void nops(unsigned int num) {
 
 
 
-uint32_t buffer_get_uint32(const u8 *buffer, int32_t *index) {
+void axi_write(int baseaddr, int offset, int value){
+  Xil_Out32(baseaddr + offset, value);
+}
 
-  uint32_t res =  ((uint32_t) buffer[*index]     << 24) +
-                  ((uint32_t) buffer[*index + 1] << 16) +
-                  ((uint32_t) buffer[*index + 2] << 8)  +
-                  ((uint32_t) buffer[*index + 3]);
+
+int axi_read(int baseaddr, int offset){
+  return Xil_In32(baseaddr + offset);
+}
+
+
+uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
+  uint16_t res = ((uint16_t) buffer[*index]) << 8 |
+                 ((uint16_t) buffer[*index + 1]);
+  *index += 2;
+  return res;
+}
+
+
+uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
+  uint32_t res = ((uint32_t) buffer[*index])     << 24 |
+                 ((uint32_t) buffer[*index + 1]) << 16 |
+                 ((uint32_t) buffer[*index + 2]) << 8  |
+                 ((uint32_t) buffer[*index + 3]);
   *index += 4;
   return res;
 }
