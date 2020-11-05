@@ -1,3 +1,24 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2020 Fredrik Åkerlund
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// Description:
+//
+////////////////////////////////////////////////////////////////////////////////
+
 #include <stdio.h>
 #include "xil_printf.h"
 #include "xscugic.h"
@@ -5,23 +26,19 @@
 #include "xparameters.h"
 #include "crc_16.h"
 #include "cfg_addr_map.h"
+#include "init_ps.h"
 
 
 // Constants
+#define              UART_BUFFER_SIZE_C 256
 static const uint8_t LENGTH_8_BITS_C  = 0xAA;
 static const uint8_t LENGTH_16_BITS_C = 0x55;
 
-// IRQ
-extern XScuGic InterruptController;
-extern XScuGic_Config *GicConfig;
 
 // UART
-#define UART_BUFFER_SIZE_C 256
-extern uint8_t irq_read_uart;
-//static uint8_t uart_tx_buffer[UART_BUFFER_SIZE_C];
+extern   XUartPs Uart_PS;
+extern   uint8_t irq_read_uart;
 volatile int32_t is_parsing;
-volatile uint8_t uart_tx_wr_addr;
-volatile uint8_t uart_tx_rd_addr;
 static   uint8_t uart_rx_buffer[UART_BUFFER_SIZE_C];
 volatile uint8_t uart_rx_wr_addr;
 volatile uint8_t uart_rx_rd_addr;
@@ -36,7 +53,7 @@ typedef enum {
   RX_READ_CRC_HIGH_E
 } rx_state_t;
 
-rx_state_t rx_state;
+rx_state_t       rx_state;
 volatile int32_t rx_crc_enabled;
 static   uint8_t rx_buffer[UART_BUFFER_SIZE_C];
 volatile int32_t rx_length;
@@ -44,31 +61,21 @@ volatile int32_t rx_addr;
 volatile int16_t rx_crc_high;
 volatile int16_t rx_crc_low;
 
-extern XUartPs Uart_PS;
-
-void nops(uint32_t num);
-void parse_uart_rx();
-void handle_rx_data();
-int32_t get_axi_offset();
-int32_t get_axi_wdata();
-void axi_write(int32_t baseaddr, int32_t offset, int32_t value);
+// Functions
+void     nops(uint32_t num);
+void     parse_uart_rx();
+void     handle_rx_data();
+void     axi_write(int32_t baseaddr, int32_t offset, int32_t value);
 int32_t  axi_read(int32_t baseaddr, int32_t offset);
-
-extern int32_t  UartPsPolledExample(u16 DeviceId);
-extern void ExtIrq_Handler(void *InstancePtr);
-extern int32_t  interrupt_init();
-
 uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index);
 uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index);
 
+
 int main() {
 
-  int32_t Status;
+  int32_t status;
 
-  // Reset
   irq_read_uart   = 0;
-  uart_tx_wr_addr = 0;
-  uart_tx_rd_addr = 0;
   uart_rx_wr_addr = 0;
   uart_rx_rd_addr = 0;
   rx_state        = RX_IDLE_E;
@@ -81,15 +88,15 @@ int main() {
 
   xil_printf("Hello World\r\n");
 
-  interrupt_init();
+  init_interrupt();
 
-  Status = UartPsPolledExample(XPAR_XUARTPS_0_DEVICE_ID);
+  status = init_uart(XPAR_XUARTPS_0_DEVICE_ID);
 
-  if (Status != XST_SUCCESS) {
+  if (status != XST_SUCCESS) {
     xil_printf("ERROR [uart] UART Initialization Failed\r\n");
     return XST_FAILURE;
   } else {
-    xil_printf("INFO [uart] UART Operational\r\n");
+    xil_printf("INFO [uart] UART Operational 2\r\n");
   }
 
   while (1) {
@@ -209,9 +216,9 @@ void handle_rx_data(const uint8_t *buffer) {
 
 
   if (rx_buffer[0] == 'W' && rx_length == 9) {
-      addr = buffer_get_uint32(buffer, &index);
-      data = buffer_get_uint32(buffer, &index);
-      xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
+    addr = buffer_get_uint32(buffer, &index);
+    data = buffer_get_uint32(buffer, &index);
+    xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
   }
 
   if (rx_buffer[0] == 'R' && rx_length == 5) {

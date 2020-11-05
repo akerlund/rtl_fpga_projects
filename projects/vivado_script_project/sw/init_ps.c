@@ -1,49 +1,61 @@
-#include <stdio.h>
-#include "xil_printf.h"
-#include "xscugic.h"
-#include "xuartps.h"
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2020 Fredrik Åkerlund
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//
+// Description:
+//
+////////////////////////////////////////////////////////////////////////////////
 
-
-int  UartPsPolledExample(u16 DeviceId);
-void ExtIrq_Handler(void *InstancePtr);
-int  interrupt_init();
+#include "init_ps.h"
 
 // IRQ
 XScuGic InterruptController;
-static XScuGic_Config *GicConfig;
+static XScuGic_Config *gic_config;
 
-#define TEST_BUFFER_SIZE 32
+// Uart
 XUartPs Uart_PS;
-static u8 SendBuffer[TEST_BUFFER_SIZE];	/* Buffer for Transmitting Data */
-static u8 RecvBuffer[TEST_BUFFER_SIZE];	/* Buffer for Receiving Data */
+uint8_t irq_read_uart;
 
-u8 irq_read_uart;
 
-void ExtIrq_Handler(void *InstancePtr) {
+void irq_handler(void *InstancePtr) {
   if (!irq_read_uart) {
     irq_read_uart = 1;
   }
 }
 
-int interrupt_init() {
 
-  int Status;
+int32_t init_interrupt() {
 
-  GicConfig = XScuGic_LookupConfig(XPAR_PS7_SCUGIC_0_DEVICE_ID);
-  if (NULL == GicConfig) {
+  int32_t status;
+
+  gic_config = XScuGic_LookupConfig(XPAR_PS7_SCUGIC_0_DEVICE_ID);
+  if (NULL == gic_config) {
     print("FAIL [irq] XScuGic_LookupConfig\n\r");
     return XST_FAILURE;
   }
 
 
-  Status = XScuGic_CfgInitialize(&InterruptController, GicConfig, GicConfig->CpuBaseAddress);
-  if (Status != XST_SUCCESS) {
+  status = XScuGic_CfgInitialize(&InterruptController, gic_config, gic_config->CpuBaseAddress);
+  if (status != XST_SUCCESS) {
     print("FAIL [irq] XScuGic_CfgInitialize\n\r");
     return XST_FAILURE;
   }
 
-  Status = XScuGic_Connect(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_0_INTR, (Xil_ExceptionHandler)ExtIrq_Handler, (void *)NULL);
-  if (Status != XST_SUCCESS) {
+  status = XScuGic_Connect(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_0_INTR, (Xil_ExceptionHandler)irq_handler, (void *)NULL);
+  if (status != XST_SUCCESS) {
     print("FAIL [irq] XScuGic_Connect\n\r");
     return XST_FAILURE;
   }
@@ -58,83 +70,31 @@ int interrupt_init() {
   return XST_SUCCESS;
 }
 
-int UartPsPolledExample(u16 DeviceId){
 
-  int Status;
-  XUartPs_Config *Config;
-  unsigned int SentCount;
-  unsigned int ReceivedCount;
-  u16 Index;
-  u32 LoopCount = 0;
+int32_t init_uart(uint16_t DeviceId){
 
+  int32_t         status;
+  XUartPs_Config *config;
 
-  Config = XUartPs_LookupConfig(DeviceId);
-  if (NULL == Config) {
+  config = XUartPs_LookupConfig(DeviceId);
+  if (NULL == config) {
     print("FAIL [irq] XUartPs_LookupConfig\n\r");
     return XST_FAILURE;
   }
 
-  Status = XUartPs_CfgInitialize(&Uart_PS, Config, Config->BaseAddress);
-  if (Status != XST_SUCCESS) {
+  status = XUartPs_CfgInitialize(&Uart_PS, config, config->BaseAddress);
+  if (status != XST_SUCCESS) {
     print("FAIL [irq] XUartPs_CfgInitialize\n\r");
     return XST_FAILURE;
   }
 
-  /* Check hardware build. */
-  Status = XUartPs_SelfTest(&Uart_PS);
-  if (Status != XST_SUCCESS) {
+  status = XUartPs_SelfTest(&Uart_PS);
+  if (status != XST_SUCCESS) {
     print("FAIL [irq] XUartPs_SelfTest\n\r");
     return XST_FAILURE;
   }
 
-  /* Use local loopback mode. */
-  XUartPs_SetOperMode(&Uart_PS, XUARTPS_OPER_MODE_LOCAL_LOOP);
-
-  // Initialize the send buffer bytes with a pattern and zero out the receive buffer.
-  for (Index = 0; Index < TEST_BUFFER_SIZE; Index++) {
-    SendBuffer[Index] = '0' + Index;
-    RecvBuffer[Index] = 0;
-  }
-
-  /* Block sending the buffer. */
-  SentCount = XUartPs_Send(&Uart_PS, SendBuffer, TEST_BUFFER_SIZE);
-  if (SentCount != TEST_BUFFER_SIZE) {
-    print("FAIL [irq] XUartPs_Send\n\r");
-    return XST_FAILURE;
-  }
-
-  /*
-   * Wait while the UART is sending the data so that we are guaranteed
-   * to get the data the 1st time we call receive, otherwise this function
-   * may enter receive before the data has arrived
-   */
-  while (XUartPs_IsSending(&Uart_PS)) {
-    LoopCount++;
-  }
-
-  /* Block receiving the buffer. */
-  ReceivedCount = 0;
-  while (ReceivedCount < TEST_BUFFER_SIZE) {
-    ReceivedCount +=
-      XUartPs_Recv(&Uart_PS, &RecvBuffer[ReceivedCount],
-              (TEST_BUFFER_SIZE - ReceivedCount));
-  }
-
-  /*
-   * Check the receive buffer against the send buffer and verify the
-   * data was correctly received
-   */
-  for (Index = 0; Index < TEST_BUFFER_SIZE; Index++) {
-    if (SendBuffer[Index] != RecvBuffer[Index]) {
-    print("FAIL [irq] SendBuffer != RecvBuffer\n\r");
-      return XST_FAILURE;
-    }
-  }
-
-  /* Restore to normal mode. */
   XUartPs_SetOperMode(&Uart_PS, XUARTPS_OPER_MODE_NORMAL);
 
   return XST_SUCCESS;
 }
-
-
