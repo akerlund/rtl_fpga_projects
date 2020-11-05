@@ -4,22 +4,12 @@
 #include "xuartps.h"
 #include "xparameters.h"
 #include "crc_16.h"
+#include "cfg_addr_map.h"
 
-
-// AXI addresses to the FPGA
-#define FPGA_BASEADDR          0x43C00000
-#define CR_LED_0_ADDR          0
-#define CR_AXI_ADDRESS_ADDR    4
-#define CR_WDATA_ADDR          8
-#define CMD_MC_AXI4_WRITE_ADDR 12
-#define CMD_MC_AXI4_READ_ADDR  16
-#define SR_LED_COUNTER_ADDR    20
-#define SR_MC_AXI4_RDATA_ADDR  24
-#define SR_HW_VERSION_ADDR     28
 
 // Constants
-static const unsigned char LENGTH_8_BITS_C  = 0xAA;
-static const unsigned char LENGTH_16_BITS_C = 0x55;
+static const uint8_t LENGTH_8_BITS_C  = 0xAA;
+static const uint8_t LENGTH_16_BITS_C = 0x55;
 
 // IRQ
 extern XScuGic InterruptController;
@@ -27,14 +17,14 @@ extern XScuGic_Config *GicConfig;
 
 // UART
 #define UART_BUFFER_SIZE_C 256
-extern u8 irq_read_uart;
-//static u8 uart_tx_buffer[UART_BUFFER_SIZE_C];
-volatile int is_parsing;
-volatile u8 uart_tx_wr_addr;
-volatile u8 uart_tx_rd_addr;
-static u8 uart_rx_buffer[UART_BUFFER_SIZE_C];
-volatile u8 uart_rx_wr_addr;
-volatile u8 uart_rx_rd_addr;
+extern uint8_t irq_read_uart;
+//static uint8_t uart_tx_buffer[UART_BUFFER_SIZE_C];
+volatile int32_t is_parsing;
+volatile uint8_t uart_tx_wr_addr;
+volatile uint8_t uart_tx_rd_addr;
+static   uint8_t uart_rx_buffer[UART_BUFFER_SIZE_C];
+volatile uint8_t uart_rx_wr_addr;
+volatile uint8_t uart_rx_rd_addr;
 
 // UART parsing
 typedef enum {
@@ -47,33 +37,33 @@ typedef enum {
 } rx_state_t;
 
 rx_state_t rx_state;
-volatile int rx_crc_enabled;
-static   u8  rx_buffer[UART_BUFFER_SIZE_C];
-volatile int rx_length;
-volatile int rx_addr;
-volatile int rx_crc_high;
-volatile int rx_crc_low;
+volatile int32_t rx_crc_enabled;
+static   uint8_t rx_buffer[UART_BUFFER_SIZE_C];
+volatile int32_t rx_length;
+volatile int32_t rx_addr;
+volatile int32_t rx_crc_high;
+volatile int32_t rx_crc_low;
 
 extern XUartPs Uart_PS;
 
-void nops(unsigned int num);
+void nops(uint32_t num);
 void parse_uart_rx();
 void handle_rx_data();
-int  get_axi_offset();
-int  get_axi_wdata();
-void axi_write(int baseaddr, int offset, int value);
-int  axi_read(int baseaddr, int offset);
+int32_t get_axi_offset();
+int32_t get_axi_wdata();
+void axi_write(int32_t baseaddr, int32_t offset, int32_t value);
+int32_t  axi_read(int32_t baseaddr, int32_t offset);
 
-extern int  UartPsPolledExample(u16 DeviceId);
+extern int32_t  UartPsPolledExample(u16 DeviceId);
 extern void ExtIrq_Handler(void *InstancePtr);
-extern int  interrupt_init();
+extern int32_t  interrupt_init();
 
 uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index);
 uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index);
 
 int main() {
 
-  int Status;
+  int32_t Status;
 
   // Reset
   irq_read_uart   = 0;
@@ -117,7 +107,6 @@ int main() {
     if (uart_rx_wr_addr == UART_BUFFER_SIZE_C) {
       uart_rx_wr_addr = 0;
     }
-
   }
 
   return 0;
@@ -125,10 +114,10 @@ int main() {
 
 void parse_uart_rx() {
 
-  u8 rx_data;
-  int nr_of_bytes = uart_rx_wr_addr - uart_rx_rd_addr;
+  uint8_t rx_data;
+  int32_t nr_of_bytes = uart_rx_wr_addr - uart_rx_rd_addr;
 
-  for (int i = uart_rx_rd_addr; i < uart_rx_rd_addr+nr_of_bytes; i++) {
+  for (int32_t i = uart_rx_rd_addr; i < uart_rx_rd_addr+nr_of_bytes; i++) {
 
     rx_data = uart_rx_buffer[i];
 
@@ -149,14 +138,14 @@ void parse_uart_rx() {
 
       case RX_LENGTH_HIGH_E:
 
-        rx_length  = (unsigned int)rx_data << 8;
+        rx_length  = (uint32_t)rx_data << 8;
         rx_state   = RX_LENGTH_LOW_E;
         break;
 
 
       case RX_LENGTH_LOW_E:
 
-        rx_length |= (unsigned int)rx_data;
+        rx_length |= (uint32_t)rx_data;
 
         if (rx_length <= UART_BUFFER_SIZE_C && rx_length > 0) {
           rx_state = RX_READ_PAYLOAD_E;
@@ -231,20 +220,20 @@ void handle_rx_data(const uint8_t *buffer) {
 }
 
 
-void nops(unsigned int num) {
-  for(int i = 0; i < num; i++) {
+void nops(uint32_t num) {
+  for(int32_t i = 0; i < num; i++) {
     asm("nop");
   }
 }
 
 
 
-void axi_write(int baseaddr, int offset, int value){
+void axi_write(int32_t baseaddr, int32_t offset, int32_t value){
   Xil_Out32(baseaddr + offset, value);
 }
 
 
-int axi_read(int baseaddr, int offset){
+int32_t axi_read(int32_t baseaddr, int32_t offset){
   return Xil_In32(baseaddr + offset);
 }
 
