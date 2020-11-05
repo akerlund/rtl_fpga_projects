@@ -41,8 +41,8 @@ volatile int32_t rx_crc_enabled;
 static   uint8_t rx_buffer[UART_BUFFER_SIZE_C];
 volatile int32_t rx_length;
 volatile int32_t rx_addr;
-volatile int32_t rx_crc_high;
-volatile int32_t rx_crc_low;
+volatile int16_t rx_crc_high;
+volatile int16_t rx_crc_low;
 
 extern XUartPs Uart_PS;
 
@@ -77,6 +77,7 @@ int main() {
   rx_crc_high     = 0;
   rx_crc_low      = 0;
   is_parsing      = 0;
+  rx_crc_enabled  = 1;
 
   xil_printf("Hello World\r\n");
 
@@ -160,7 +161,7 @@ void parse_uart_rx() {
         if (rx_addr == rx_length) {
 
           if (rx_crc_enabled) {
-            rx_state = RX_READ_CRC_LOW_E;
+            rx_state = RX_READ_CRC_HIGH_E;
           } else {
             handle_rx_data(rx_buffer);
             rx_state = RX_IDLE_E;
@@ -169,20 +170,22 @@ void parse_uart_rx() {
         break;
 
 
-      case RX_READ_CRC_LOW_E:
+      case RX_READ_CRC_HIGH_E:
 
-        rx_state    = RX_READ_CRC_HIGH_E;
-        rx_crc_high = rx_data;
+        rx_state    = RX_READ_CRC_LOW_E;
+        rx_crc_high = (uint16_t)rx_data << 8;
         break;
 
 
-      case RX_READ_CRC_HIGH_E:
+      case RX_READ_CRC_LOW_E:
 
-        rx_crc_low = rx_data;
+        rx_crc_low = (uint16_t)rx_data;
 
-        //if (crc_16(rx_buffer, rx_length) == ((unsigned short)rx_crc_high << 8 | (unsigned short)rx_crc_low)) {
-        //  handle_rx_data();
-        //}
+        if (crc_16(rx_buffer, rx_length) == (uint16_t)(rx_crc_high | rx_crc_low)) {
+          handle_rx_data(rx_buffer);
+        } else {
+          printf("Bad CRC, %x != %x\r\n", crc_16(rx_buffer, rx_length), (rx_crc_high | rx_crc_low));
+        }
 
         rx_state = RX_IDLE_E;
         break;
@@ -195,7 +198,6 @@ void parse_uart_rx() {
   }
 
   uart_rx_rd_addr = uart_rx_wr_addr;
-
 }
 
 
