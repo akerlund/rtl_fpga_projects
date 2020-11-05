@@ -4,6 +4,7 @@
 #include "xscugic.h"
 #include "xuartps.h"
 #include "xparameters.h"
+#include "crc_16.h"
 
 
 // AXI addresses to the FPGA
@@ -216,12 +217,14 @@ void parse_uart_rx() {
 void handle_rx_data(const uint8_t *buffer) {
 
   int32_t  index = 1;
+  uint32_t data;
   uint32_t addr;
 
 
   if (rx_buffer[0] == 'W' && rx_length == 9) {
-    xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", get_axi_offset(), get_axi_wdata());
-    //reg_write(FPGA_BASEADDR, get_axi_offset(), get_axi_wdata());
+      addr = buffer_get_uint32(buffer, &index);
+      data = buffer_get_uint32(buffer, &index);
+      xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
   }
 
   if (rx_buffer[0] == 'R' && rx_length == 5) {
