@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "platform.h"
 #include "xil_printf.h"
 #include "xscugic.h"
 #include "xuartps.h"
@@ -89,8 +88,6 @@ int main() {
   rx_crc_low      = 0;
   is_parsing      = 0;
 
-  init_platform();
-
   xil_printf("Hello World\r\n");
 
   interrupt_init();
@@ -98,10 +95,10 @@ int main() {
   Status = UartPsPolledExample(XPAR_XUARTPS_0_DEVICE_ID);
 
   if (Status != XST_SUCCESS) {
-    xil_printf("ERROR [uart] UART Polled Mode Example Test Failed\r\n");
+    xil_printf("ERROR [uart] UART Initialization Failed\r\n");
     return XST_FAILURE;
   } else {
-    xil_printf("INFO [uart] UART success\r\n");
+    xil_printf("INFO [uart] UART Operational\r\n");
   }
 
   while (1) {
@@ -123,7 +120,6 @@ int main() {
 
   }
 
-  cleanup_platform();
   return 0;
 }
 

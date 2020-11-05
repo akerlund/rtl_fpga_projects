@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "platform.h"
 #include "xil_printf.h"
 #include "xscugic.h"
 #include "xuartps.h"
@@ -18,10 +17,12 @@ XUartPs Uart_PS;
 static u8 SendBuffer[TEST_BUFFER_SIZE];	/* Buffer for Transmitting Data */
 static u8 RecvBuffer[TEST_BUFFER_SIZE];	/* Buffer for Receiving Data */
 
+u8 irq_read_uart;
 
 void ExtIrq_Handler(void *InstancePtr) {
-  xil_printf("ExtIrq_Handler\r\n");
-  irq_read_uart = 1;
+  if (!irq_read_uart) {
+    irq_read_uart = 1;
+  }
 }
 
 int interrupt_init() {
