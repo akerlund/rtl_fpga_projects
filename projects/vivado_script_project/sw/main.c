@@ -27,6 +27,7 @@
 #include "crc_16.h"
 #include "cfg_addr_map.h"
 #include "init_ps.h"
+#include "byte_vector.h"
 
 
 // Constants
@@ -67,8 +68,6 @@ void     parse_uart_rx();
 void     handle_rx_data();
 void     axi_write(int32_t baseaddr, int32_t offset, int32_t value);
 int32_t  axi_read(int32_t baseaddr, int32_t offset);
-uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index);
-uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index);
 
 
 int main() {
@@ -216,15 +215,15 @@ void handle_rx_data(const uint8_t *buffer) {
 
 
   if (rx_buffer[0] == 'W' && rx_length == 9) {
-    addr = buffer_get_uint32(buffer, &index);
-    data = buffer_get_uint32(buffer, &index);
+    addr = vector_get_uint32(buffer, &index);
+    data = vector_get_uint32(buffer, &index);
     xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
   }
 
   if (rx_buffer[0] == 'R' && rx_length == 5) {
 
-    addr = buffer_get_uint32(buffer, &index);
-    xil_printf("INFO [rx] raddr(%u)\r", addr);
+      addr = vector_get_uint32(buffer, &index);
+      xil_printf("INFO [rx] raddr(%u)\r", addr);
   }
 }
 
@@ -246,20 +245,3 @@ int32_t axi_read(int32_t baseaddr, int32_t offset){
   return Xil_In32(baseaddr + offset);
 }
 
-
-uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
-  uint16_t res = ((uint16_t) buffer[*index]) << 8 |
-                 ((uint16_t) buffer[*index + 1]);
-  *index += 2;
-  return res;
-}
-
-
-uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
-  uint32_t res = ((uint32_t) buffer[*index])     << 24 |
-                 ((uint32_t) buffer[*index + 1]) << 16 |
-                 ((uint32_t) buffer[*index + 2]) << 8  |
-                 ((uint32_t) buffer[*index + 3]);
-  *index += 4;
-  return res;
-}
