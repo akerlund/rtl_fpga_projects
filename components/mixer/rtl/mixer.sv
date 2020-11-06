@@ -28,25 +28,25 @@ module mixer #(
     parameter int Q_BITS_P         = -1
   )(
     // Clock and reset
-    input  wire                                                clk,
-    input  wire                                                rst_n,
+    input  wire                                                       clk,
+    input  wire                                                       rst_n,
 
     // Ingress
-    input  wire [NR_OF_CHANNELS_P-1 : 0] [AUDIO_WIDTH_P-1 : 0] channel_data,
-    input  wire                       [NR_OF_CHANNELS_P-1 : 0] channel_valid,
+    input  wire signed [NR_OF_CHANNELS_P-1 : 0] [AUDIO_WIDTH_P-1 : 0] channel_data,
+    input  wire                              [NR_OF_CHANNELS_P-1 : 0] channel_valid,
 
     // Egress
-    output logic                         [AUDIO_WIDTH_P-1 : 0] mixed_data,
-    output logic                                               mixed_valid,
-    input  wire                                                mixed_ready,
+    output logic signed                         [AUDIO_WIDTH_P-1 : 0] mixed_data,
+    output logic                                                      mixed_valid,
+    input  wire                                                       mixed_ready,
 
     // Configuration
-    input  wire  [NR_OF_CHANNELS_P-1 : 0] [GAIN_WIDTH_P-1 : 0] cr_channel_gain,
-    input  wire                           [GAIN_WIDTH_P-1 : 0] cr_output_gain
+    input  wire         [NR_OF_CHANNELS_P-1 : 0] [GAIN_WIDTH_P-1 : 0] cr_channel_gain,
+    input  wire                                  [GAIN_WIDTH_P-1 : 0] cr_output_gain
   );
 
-  logic [NR_OF_CHANNELS_P-1 : 0] [AUDIO_WIDTH_P-1 : 0] channel_products;
-  logic                          [AUDIO_WIDTH_P-1 : 0] mixed_data_r0;
+  logic signed [NR_OF_CHANNELS_P-1 : 0] [AUDIO_WIDTH_P-1 : 0] channel_products;
+  logic signed                          [AUDIO_WIDTH_P-1 : 0] mixed_data_r0;
 
   // Input stage
   always_ff @(posedge clk or negedge rst_n) begin : channel_input_p0
@@ -56,7 +56,7 @@ module mixer #(
     else begin
       for (int i = 0; i < NR_OF_CHANNELS_P; i++) begin
         if (channel_valid[i]) begin
-          channel_products[i] <= channel_data * cr_output_gain[i];
+          channel_products[i] <= $signed(channel_data[i]) * cr_output_gain[i];
         end
       end
     end
