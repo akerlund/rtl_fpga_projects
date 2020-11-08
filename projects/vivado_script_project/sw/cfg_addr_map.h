@@ -23,14 +23,10 @@
 #define CFG_ADDR_MAP_H
 
 // AXI addresses to the FPGA
-#define FPGA_BASEADDR          0x43C00000
-#define CR_LED_0_ADDR          0
-#define CR_AXI_ADDRESS_ADDR    4
-#define CR_WDATA_ADDR          8
-#define CMD_MC_AXI4_WRITE_ADDR 12
-#define CMD_MC_AXI4_READ_ADDR  16
-#define SR_LED_COUNTER_ADDR    20
-#define SR_MC_AXI4_RDATA_ADDR  24
-#define SR_HW_VERSION_ADDR     28
+#define FPGA_BASEADDR      0x43C00000
+#define LED_0_ADDR         0
+#define MIX_OUTPUT_GAIN    4
+#define MIX_CHANNEL_GAIN_0 8
+#define MIX_CHANNEL_GAIN_1 12
 
 #endif

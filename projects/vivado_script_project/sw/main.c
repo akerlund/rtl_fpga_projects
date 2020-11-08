@@ -66,8 +66,8 @@ volatile int16_t rx_crc_low;
 void     nops(uint32_t num);
 void     parse_uart_rx();
 void     handle_rx_data();
-void     axi_write(int32_t baseaddr, int32_t offset, int32_t value);
-int32_t  axi_read(int32_t baseaddr, int32_t offset);
+void     axi_write(uint32_t baseaddr, uint32_t offset, int32_t value);
+uint32_t axi_read(uint32_t  baseaddr, uint32_t offset);
 
 
 int main() {
@@ -218,12 +218,14 @@ void handle_rx_data(const uint8_t *buffer) {
     addr = vector_get_uint32(buffer, &index);
     data = vector_get_uint32(buffer, &index);
     xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
+    axi_write(FPGA_BASEADDR, addr, data);
   }
 
   if (rx_buffer[0] == 'R' && rx_length == 5) {
 
       addr = vector_get_uint32(buffer, &index);
-      xil_printf("INFO [rx] raddr(%u)\r", addr);
+      data = axi_read(FPGA_BASEADDR, addr);
+      xil_printf("INFO [rx] raddr(%u) rdata(%u)\r", addr, data);
   }
 }
 
@@ -236,12 +238,12 @@ void nops(uint32_t num) {
 
 
 
-void axi_write(int32_t baseaddr, int32_t offset, int32_t value){
+void axi_write(uint32_t baseaddr, uint32_t offset, int32_t value){
   Xil_Out32(baseaddr + offset, value);
 }
 
 
-int32_t axi_read(int32_t baseaddr, int32_t offset){
+uint32_t axi_read(uint32_t baseaddr, uint32_t offset){
   return Xil_In32(baseaddr + offset);
 }
 
