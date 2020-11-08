@@ -148,18 +148,10 @@ module project_top #(
 
   localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1811;
   localparam int                            NR_OF_MASTERS_C       = 2;
-
-  typedef enum {
-    AW_WAIT_FOR_CMD_E,
-    AW_WAIT_FOR_HS_E,
-    W_WAIT_FOR_HS_E
-  } write_state_t;
-
-  typedef enum {
-    AR_WAIT_FOR_CMD_E,
-    AR_WAIT_FOR_HS_E,
-    R_WAIT_FOR_HS_E
-  } read_state_t;
+  localparam int                            AUDIO_WIDTH_C         = 24;
+  localparam int                            GAIN_WIDTH_C          = 24;
+  localparam int                            NR_OF_CHANNELS_C      = 2;
+  localparam int                            Q_BITS_C              = 7;
 
   // -------------------------------------------------------------------------
   // IRQ
@@ -189,14 +181,7 @@ module project_top #(
   // AXI4 registers
   // -------------------------------------------------------------------------
   logic [AXI_DATA_WIDTH_P-1 : 0] cr_led_0;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_led_counter;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_mc_axi4_rdata;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cr_axi_address;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cr_wdata;
   logic [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_write;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_read;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_rdata;
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -216,7 +201,6 @@ module project_top #(
   logic [0 : NR_OF_MASTERS_C-1]                          mst_wvalid;
   logic [0 : NR_OF_MASTERS_C-1]                          mst_wready;
 
-
   // -------------------------------------------------------------------------
   // AXI4 Read Arbiter
   // -------------------------------------------------------------------------
@@ -235,376 +219,131 @@ module project_top #(
   logic [0 : NR_OF_MASTERS_C-1]                          mst_rvalid;
   logic [0 : NR_OF_MASTERS_C-1]                          mst_rready;
 
-  // AXI4 Arbiter Write Channel (Master is a SW register)
-  // write_state_t write_state;
-  // logic mst_awvalid;
-  // logic mst_awready;
-  // logic mst_wvalid;
-  // logic mst_wready;
-
-  // AXI4 Arbiter Read Channel (Master is a SW register)
-  // read_state_t read_state;
-  // logic mst_arready;
-  // logic mst_arvalid;
-  // logic mst_rlast;
-  // logic mst_rvalid;
-  // logic mst_rready;
-
   // -------------------------------------------------------------------------
   // Cirrus clock and reset
   // -------------------------------------------------------------------------
-  logic          clk_mclk;
-  logic          rst_mclk_n;
+
+  logic clk_mclk;
+  logic rst_mclk_n;
 
   // -------------------------------------------------------------------------
   // I2S2 PMOD
   // -------------------------------------------------------------------------
 
-  logic [23 : 0] cs_dac_data_mux;
-  logic          cs_dac_last_mux;
-  logic          cs_dac_valid_mux;
-  logic          cs_dac_ready;
+  logic [AUDIO_WIDTH_C-1 : 0] cs_adc_data;
+  logic                       cs_adc_ready;
+  logic                       cs_adc_valid;
+  logic                       cs_adc_last;
 
-  logic [23 : 0] cs_dac_data0;
-  logic          cs_dac_last0;
-  logic          cs_dac_valid0;
-  logic [23 : 0] cs_adc_data;
-  logic          cs_adc_ready;
-  logic          cs_adc_valid;
-  logic          cs_adc_last;
+  logic [AUDIO_WIDTH_C-1 : 0] cs_dac_data;
+  logic                       cs_dac_last;
+  logic                       cs_dac_valid;
+  logic                       cs_dac_ready;
 
   // -------------------------------------------------------------------------
-  // Volume Controller
+  // Mixer
   // -------------------------------------------------------------------------
 
-  // Volume controller volume input
-  logic  [3 : 0] vc_volume;
-
-  // Volume controller ingress (ADC)
-  logic [23 : 0] vc_adc_data;
-  logic          vc_adc_valid;
-  logic          vc_adc_last;
-  logic          vc_adc_ready;
-
-  // Volume controller egress (DAC)
-  logic [23 : 0] vc_dac_data;
-  logic          vc_dac_valid;
-  logic          vc_dac_last;
-  logic          vc_dac_ready;
+  logic signed [NR_OF_CHANNELS_C-1 : 0] [AUDIO_WIDTH_C-1 : 0] mix_channel_data;
+  logic                                                       mix_channel_valid;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_left;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_right;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_right_r0;
+  logic                                                       mix_out_valid;
+  logic                                                       mix_out_ready;
+  logic                              [NR_OF_CHANNELS_C-1 : 0] sr_mix_channel_clip;
+  logic                                                       sr_mix_out_clip;
+  logic         [NR_OF_CHANNELS_C-1 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain;
+  logic                              [NR_OF_CHANNELS_C-1 : 0] cr_mix_channel_pan;
+  logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain;
 
   // -------------------------------------------------------------------------
-  // AXI4 Recording
+  // Mixer Ingress
   // -------------------------------------------------------------------------
-
-  logic                          sr_rec_enabled;
-  logic         [0 : 1] [23 : 0] data_buffer;
-  logic                          data_counter;
-
-  // Write Address Channel
-  logic   [AXI_ID_WIDTH_P-1 : 0] rec_awid;
-  logic [AXI_ADDR_WIDTH_P-1 : 0] rec_awaddr;
-  logic                  [7 : 0] rec_awlen;
-  logic                          rec_awvalid;
-  logic                          rec_awready;
-
-  // Write Data Channel
-  logic [AXI_DATA_WIDTH_P-1 : 0] rec_wdata;
-  logic [AXI_STRB_WIDTH_P-1 : 0] rec_wstrb;
-  logic                          rec_wlast;
-  logic                          rec_wvalid;
-  logic                          rec_wready;
-
-  // -------------------------------------------------------------------------
-  // AXI4 Playback
-  // -------------------------------------------------------------------------
-
-  // Read Address Channel
-  logic   [AXI_ID_WIDTH_P-1 : 0] play_arid;
-  logic [AXI_ADDR_WIDTH_P-1 : 0] play_araddr;
-  logic                  [7 : 0] play_arlen;
-  logic                          play_arvalid;
-  logic                          play_arready;
-
-  // Read Data Channel
-  logic   [AXI_ID_WIDTH_P-1 : 0] play_rid;
-  logic [AXI_DATA_WIDTH_P-1 : 0] play_rdata;
-  logic                          play_rlast;
-  logic                          play_rvalid;
-  logic                          play_rready;
-
-  // -------------------------------------------------------------------------
-  // Assignments
-  // -------------------------------------------------------------------------
-
-  assign sr_led_counter = led_3_counter;
-  assign vc_volume      = {switch_1, switch_0, 2'b11};
-
-  // Write Address Channel
-  assign mst_awid[0]    = rec_awid;
-  assign mst_awaddr[0]  = rec_awaddr;
-  assign mst_awlen[0]   = rec_awlen;
-  assign mst_awvalid[0] = rec_awvalid;
-  assign rec_awready    = mst_awready[0];
-
-  // Write Data Channel
-  assign mst_wdata[0]   = rec_wdata;
-  assign mst_wstrb[0]   = rec_wstrb;
-  assign mst_wlast[0]   = rec_wlast;
-  assign mst_wvalid[0]  = rec_wvalid;
-  assign rec_wready     = mst_wready[0];
-
-  // Read Address Channel
-  assign mst_arid[0]    = play_arid;
-  assign mst_araddr[0]  = play_araddr;
-  assign mst_arlen[0]   = play_arlen;
-  assign mst_arvalid[0] = play_arvalid;
-  assign play_arready   = mst_arready[0];
-
-  // Read Data Channel
-  assign play_rid      = mst_rid[0];
-  assign play_rdata    = mst_rdata[0];
-  assign play_rlast    = mst_rlast;
-  assign play_rvalid   = mst_rvalid[0];
-  assign mst_rready[0] = play_rready;
-
-  // -------------------------------------------------------------------------
-  // Record to memory
-  // -------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin : mem_recorder_p0
+  always_ff @(posedge clk or negedge rst_n) begin : mixer_ingress_p0
     if (!rst_n) begin
-
-      sr_rec_enabled <= '0;
-      data_buffer    <= '0;
-      data_counter   <= '0;
-
-      rec_awid    <= '0;
-      rec_awaddr  <= '0;
-      rec_awlen   <= '0;
-      rec_awvalid <= '0;
-      rec_wdata   <= '0;
-      rec_wstrb   <= '0;
-      rec_wlast   <= '0;
-      rec_wvalid  <= '0;
-
+      mix_channel_data[0]    <= '0;
+      mix_channel_data[1]    <= '0;
+      mix_channel_valid      <= '0;
+      cr_mix_channel_gain[0] <= (1 << Q_BITS_C);
+      cr_mix_channel_gain[1] <= (1 << Q_BITS_C);
+      cr_mix_channel_pan[0]  <= '0;
+      cr_mix_channel_pan[1]  <= '1;
+      cs_adc_ready           <= '1;
     end
     else begin
 
-      rec_awid   <= '0;
-      rec_awlen  <= '0;
-      rec_wdata  <= {'0, vc_adc_data};
-      rec_wstrb  <= '1;
-      rec_wvalid <= '0;
+      mix_channel_valid <= '0;
 
-      if (btn_0_tgl) begin
-        sr_rec_enabled <= ~sr_rec_enabled;
+      if (cs_adc_valid && !cs_adc_last) begin
+        mix_channel_data[0] <= cs_adc_data;
       end
 
-      if (sr_rec_enabled) begin
+      if (cs_adc_valid && cs_adc_last) begin
+        mix_channel_data[1] <= cs_adc_data;
+        mix_channel_valid   <= '1;
+      end
 
-        // If Write Data is handshaken, stop
-        if (rec_wvalid && rec_wready) begin
-          rec_wvalid <= '0;
-        end
-        // If there is new data in the FIFO
-        else if (sr_fill_level_rfi != 0 && !rec_awvalid) begin
-          rec_awvalid <= '1;
-        end
-        // If the Write Address has been sent
-        else if (rec_awvalid) begin
+    end
+  end
 
-          // The  Write Address in handshaken
-          if (rec_awready) begin
-            rec_awaddr  <= rec_awaddr + 1;
-            rec_awvalid <= '0;
-            rec_wvalid  <= '1;
-            rec_wlast   <= '1;
+  typedef enum {
+    MIX_WAIT_VALID,
+    MIX_SEND_FIRST,
+    MIX_SEND_LAST
+  } mix_egr_state_t;
+
+  mix_egr_state_t mix_egr_state;
+
+  // -------------------------------------------------------------------------
+  // Mixer Egress
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : mixer_egress_p0
+    if (!rst_n) begin
+
+      mix_egr_state      <= MIX_WAIT_VALID;
+      mix_out_ready      <= '1;
+      mix_out_right_r0   <= '0;
+      cr_mix_output_gain <= (1 << Q_BITS_C);
+      cs_dac_data        <= '0;
+      cs_dac_last        <= '0;
+      cs_dac_valid       <= '0;
+    end
+    else begin
+
+      case (mix_egr_state)
+
+        MIX_WAIT_VALID: begin
+
+          if (mix_out_valid) begin
+            mix_egr_state    <= MIX_SEND_FIRST;
+            mix_out_right_r0 <= mix_out_right;
+            cs_dac_data      <= mix_out_left;
+            cs_dac_last      <= '0;
+            cs_dac_valid     <= '1;
           end
         end
-      end
-    end
-  end
 
-  logic          rfi_ing_enable;
-  logic          rfi_ing_full;
+        MIX_SEND_FIRST: begin
 
-  logic          rfi_egr_enable;
-  logic [23 : 0] rfi_egr_data;
-  logic          rfi_egr_empty;
+          if (cs_dac_ready) begin
+            mix_egr_state <= MIX_SEND_LAST;
+            cs_dac_data   <= mix_out_right_r0;
+            cs_dac_last   <= '1;
+          end
 
-  logic  [2 : 0] sr_fill_level_rfi;
-
-  assign rfi_ing_enable = vc_adc_valid && vc_adc_ready && sr_rec_enabled && !rfi_ing_full;
-  assign rfi_egr_enable = rec_awvalid  && rec_awready  && !rfi_egr_empty;
-
-
-  synchronous_fifo #(
-    .DATA_WIDTH_P         ( 24                ),
-    .ADDR_WIDTH_P         ( 2                 )
-  ) synchronous_fifo_i0 (
-
-    // Clock and reset
-    .clk                  ( clk               ), // input
-    .rst_n                ( rst_n             ), // input
-
-    // Ingress
-    .ing_enable           ( rfi_ing_enable    ), // input
-    .ing_data             ( vc_dac_data       ), // input
-    .ing_full             ( rfi_ing_full      ), // output
-    .ing_almost_full      (                   ), // output
-
-    // Egress
-    .egr_enable           ( rfi_egr_enable    ), // input
-    .egr_data             ( rfi_egr_data      ), // output
-    .egr_empty            ( rfi_egr_empty     ), // output
-
-    // Configuration and status registers
-    .sr_fill_level        ( sr_fill_level_rfi ), // output
-    .sr_max_fill_level    (                   ), // output
-    .cr_almost_full_level ( '0                )  // input
-  );
-
-
-  // -------------------------------------------------------------------------
-  // Playback from memory
-  // -------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin : mem_playback_p0
-    if (!rst_n) begin
-
-      // Read Address Channel
-      play_arid    <= '0;
-      play_araddr  <= '0;
-      play_arlen   <= '0;
-      play_arvalid <= '0;
-
-      // Read Data Channel
-      play_rready  <= '0;
-
-    end
-    else begin
-
-      // Read Address Channel
-      play_arid    <= '0;
-      play_arlen   <= 0;
-
-      if (play_arvalid) begin
-
-        if (play_arready) begin
-          play_arvalid <= '0;
-          play_rready  <= '1;
         end
 
-      end
-      else if (play_rready) begin
+        MIX_SEND_LAST: begin
 
-        if (play_rvalid) begin
-          play_rready <= '0;
-          play_araddr <= play_araddr + 1;
+          if (cs_dac_ready) begin
+            mix_egr_state <= MIX_WAIT_VALID;
+            cs_dac_valid  <= '0;
+          end
         end
 
-      end
-      else if (play_araddr != rec_awaddr) begin
+      endcase
 
-        play_arvalid <= '1;
-
-      end
-
-    end
-  end
-
-  logic          pfi_ing_enable;
-  logic [23 : 0] pfi_ing_data;
-  logic          pfi_ing_full;
-
-  logic          pfi_egr_enable;
-  logic [23 : 0] pfi_egr_data;
-  logic          pfi_egr_empty;
-
-  logic  [2 : 0] sr_fill_level_pfi;
-
-  assign pfi_ing_enable = play_rvalid && play_rready && !pfi_ing_full;
-  //assign pfi_egr_enable = rec_awvalid  && rec_awready  && !pfi_egr_empty;
-  assign pfi_ing_data  = play_rdata[23 : 0];
-
-  synchronous_fifo #(
-    .DATA_WIDTH_P         ( 24                ),
-    .ADDR_WIDTH_P         ( 2                 )
-  ) synchronous_fifo_i1 (
-
-    // Clock and reset
-    .clk                  ( clk               ), // input
-    .rst_n                ( rst_n             ), // input
-
-    // Ingress
-    .ing_enable           ( pfi_ing_enable    ), // input
-    .ing_data             ( pfi_ing_data      ), // input
-    .ing_full             ( pfi_ing_full      ), // output
-    .ing_almost_full      (                   ), // output
-
-    // Egress
-    .egr_enable           ( pfi_egr_enable    ), // input
-    .egr_data             ( pfi_egr_data      ), // output
-    .egr_empty            ( pfi_egr_empty     ), // output
-
-    // Configuration and status registers
-    .sr_fill_level        ( sr_fill_level_pfi ), // output
-    .sr_max_fill_level    (                   ), // output
-    .cr_almost_full_level ( '0                )  // input
-  );
-
-  logic         pfi_read_fifo;
-  logic [1 : 0] pfi_read_counter;
-
-  logic         pfi_ready;
-  logic         pfi_valid;
-  logic         pfi_last;
-
-  always_ff @(posedge clk or negedge rst_n) begin : output_reader_p0
-    if (!rst_n) begin
-
-      pfi_read_fifo    <= '0;
-      pfi_read_counter <= '0;
-      pfi_valid        <= '0;
-      pfi_last         <= '0;
-    end
-    else begin
-
-      pfi_last <= '0;
-
-      if (sr_fill_level_pfi >= 2 && !pfi_read_fifo) begin
-        pfi_read_fifo    <= '1;
-        pfi_read_counter <= '0;
-      end
-
-      if (pfi_read_fifo && pfi_ready) begin
-        pfi_egr_enable   <= '1;
-        pfi_valid        <= '1;
-        pfi_read_counter <= pfi_read_counter + 1;
-        if (pfi_read_counter != 0) begin
-          pfi_last      <= '1;
-          pfi_read_fifo <= '0;
-        end
-      end
-
-    end
-  end
-
-  always_comb begin
-
-    cs_dac_data_mux  = '0;
-    cs_dac_last_mux  = '0;
-    cs_dac_valid_mux = '0;
-    pfi_ready        = '0;
-
-    if (switch_0) begin
-      cs_dac_data_mux  = pfi_egr_data;
-      cs_dac_last_mux  = pfi_last;
-      cs_dac_valid_mux = pfi_valid;
-      pfi_ready        = cs_dac_ready;
-    end
-    else begin
-      cs_dac_data_mux  = cs_dac_data0;
-      cs_dac_last_mux  = cs_dac_last0;
-      cs_dac_valid_mux = cs_dac_valid0;
     end
   end
 
@@ -617,13 +356,10 @@ module project_top #(
       irq_1 <= '0;
     end
     else begin
-
       irq_1 <= '0;
-
       if (mc_rvalid && mc_rready && mc_rlast) begin
         irq_1 <= '1;
       end
-
     end
   end
 
@@ -633,14 +369,10 @@ module project_top #(
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : led_toggle_p0
     if (!rst_n) begin
-
       led_0 <= '0;
-
     end
     else begin
-
       led_0 <= cr_led_0[0];
-
     end
   end
 
@@ -728,162 +460,69 @@ module project_top #(
     end
   end
 
-  // -------------------------------------------------------------------------
-  // Process for routing SW commands to AXI4 writes to the DDR
-  // -------------------------------------------------------------------------
-//  always_ff @(posedge clk or negedge rst_n) begin
-//    if (!rst_n) begin
-//      write_state <= AW_WAIT_FOR_CMD_E;
-//      mst_awvalid <= '0;
-//    end
-//    else begin
-//
-//      case (write_state)
-//
-//        AW_WAIT_FOR_CMD_E: begin
-//
-//          if (cmd_mc_axi4_write) begin
-//            mst_awvalid <= '1;
-//            write_state <= AW_WAIT_FOR_HS_E;
-//          end
-//        end
-//
-//
-//        AW_WAIT_FOR_HS_E: begin
-//
-//          if (mst_awready) begin
-//            mst_awvalid <= '0;
-//            mst_wvalid  <= '1;
-//            write_state <= W_WAIT_FOR_HS_E;
-//          end
-//        end
-//
-//
-//        W_WAIT_FOR_HS_E: begin
-//
-//          if (mst_awready) begin
-//            mst_wvalid  <= '0;
-//            write_state <= AW_WAIT_FOR_CMD_E;
-//          end
-//        end
-//
-//      endcase
-//
-//    end
-//  end
-
-
-  // -------------------------------------------------------------------------
-  // Process for routing SW commands to AXI4 reads the DDR
-  // -------------------------------------------------------------------------
-//  always_ff @(posedge clk or negedge rst_n) begin
-//    if (!rst_n) begin
-//      read_state  <= AR_WAIT_FOR_CMD_E;
-//      mst_arvalid <= '0;
-//      mst_rready  <= '0;
-//    end
-//    else begin
-//
-//      case (read_state)
-//
-//        AR_WAIT_FOR_CMD_E: begin
-//
-//          if (cmd_mc_axi4_read) begin
-//            mst_arvalid <= '1;
-//            read_state  <= AR_WAIT_FOR_HS_E;
-//          end
-//        end
-//
-//
-//        AR_WAIT_FOR_HS_E: begin
-//
-//          if (mst_arready) begin
-//            mst_arvalid <= '0;
-//            read_state  <= R_WAIT_FOR_HS_E;
-//            mst_rready  <= '1;
-//          end
-//        end
-//
-//
-//        R_WAIT_FOR_HS_E: begin
-//
-//          if (mst_rlast && mst_rvalid) begin
-//            mst_rready <= '0;
-//            read_state <= AR_WAIT_FOR_CMD_E;
-//          end
-//        end
-//
-//      endcase
-//
-//    end
-//  end
-
-
-  // -------------------------------------------------------------------------
-  // Wrapper for mechanical buttons
-  // -------------------------------------------------------------------------
-  arty_z7_buttons_top arty_z7_buttons_top_i0 (
-    .clk       ( clk       ), // input
-    .rst_n     ( rst_n     ), // input
-    .btn_0     ( btn_0     ), // input
-    .btn_1     ( btn_1     ), // input
-    .btn_2     ( btn_2     ), // input
-    .btn_3     (           ), // input
-    .btn_0_tgl ( btn_0_tgl ), // output
-    .btn_1_tgl ( btn_1_tgl ), // output
-    .btn_2_tgl ( btn_2_tgl ), // output
-    .btn_3_tgl (           )  // output
+  mixer #(
+    .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C       ),
+    .GAIN_WIDTH_P        ( GAIN_WIDTH_C        ),
+    .NR_OF_CHANNELS_P    ( NR_OF_CHANNELS_C    ),
+    .Q_BITS_P            ( Q_BITS_C            )
+  ) mixer_i0 (
+    .clk                 ( clk                 ), // input
+    .rst_n               ( rst_n               ), // input
+    .channel_data        ( mix_channel_data    ), // input
+    .channel_valid       ( mix_channel_valid   ), // input
+    .out_left            ( mix_out_left        ), // output
+    .out_right           ( mix_out_right       ), // output
+    .out_valid           ( mix_out_valid       ), // input
+    .out_ready           ( mix_out_ready       ), // input
+    .sr_mix_channel_clip ( sr_mix_channel_clip ), // output
+    .sr_mix_out_clip     ( sr_mix_out_clip     ), // output
+    .cr_mix_channel_gain ( cr_mix_channel_gain ), // input
+    .cr_mix_channel_pan  ( cr_mix_channel_pan  ), // input
+    .cr_mix_output_gain  ( cr_mix_output_gain  )  // input
   );
-
-
-  // -------------------------------------------------------------------------
-  // AXI4 Slave with PL registers
-  // -------------------------------------------------------------------------
-  register_axi_slave #(
-    .AXI_DATA_WIDTH_P    ( AXI_DATA_WIDTH_P      ),
-    .AXI_ADDR_WIDTH_P    ( AXI_ADDR_WIDTH_P      )
-  ) register_axi_slave_i0 (
-
-    .clk                 ( clk                   ), // input
-    .rst_n               ( rst_n                 ), // input
-
-    .awaddr              ( cfg_awaddr            ), // input
-    .awvalid             ( cfg_awvalid           ), // input
-    .awready             ( cfg_awready           ), // output
-
-    .wdata               ( cfg_wdata             ), // input
-    .wstrb               ( cfg_wstrb             ), // input
-    .wvalid              ( cfg_wvalid            ), // input
-    .wready              ( cfg_wready            ), // output
-
-    .bresp               ( cfg_bresp             ), // output
-    .bvalid              ( cfg_bvalid            ), // output
-    .bready              ( cfg_bready            ), // input
-
-    .araddr              ( cfg_araddr            ), // input
-    .arvalid             ( cfg_arvalid           ), // input
-    .arready             ( cfg_arready           ), // output
-
-    .rdata               ( cfg_rdata             ), // output
-    .rresp               ( cfg_rresp             ), // output
-    .rvalid              ( cfg_rvalid            ), // output
-    .rready              ( cfg_rready            ), // input
-
-    .sr_hardware_version ( SR_HARDWARE_VERSION_C ), // input
-    .cmd_irq_clear       ( cmd_irq_clear         ), // output
-    .sr_mc_axi4_rdata    ( '0                    ), // input
-
-    .cr_led_0            ( cr_led_0              ), // output
-    .cr_axi_address      ( cr_axi_address        ), // output
-    .cr_wdata            ( cr_wdata              ), // output
-
-    .cmd_mc_axi4_write   ( cmd_mc_axi4_write     ), // output
-    .cmd_mc_axi4_read    ( cmd_mc_axi4_read      ), // output
-
-    .sr_led_counter      ( sr_led_counter        ), // input
-    .sr_rdata            ( sr_rdata              )  // input
+/*
+  recorder #(
+    .AXI_ID_P              ( 420                   ),
+    .AXI_ID_WIDTH_P        ( AXI_ID_WIDTH_P        ),
+    .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
+    .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
+    .AXI_STRB_WIDTH_P      ( AXI_STRB_WIDTH_P      ),
+    .RECORD_BIT_WIDTH_P    ( RECORD_BIT_WIDTH_P    ),
+    .MEMORY_BASE_ADDRESS_P ( MEMORY_BASE_ADDRESS_P ),
+    .MEMORY_HIGH_ADDRESS_P ( MEMORY_HIGH_ADDRESS_P )
+  ) recorder_i0 (
+    .clk                   ( clk                   ), // input
+    .rst_n                 ( rst_n                 ), // input
+    .ing_tdata             ( vc_adc_data           ), // input
+    .ing_tvalid            ( vc_adc_valid          ), // input
+    .ing_tready            ( ),//vc_adc_ready      ), // output
+    .egr_tdata             ( vc_dac_data           ), // output
+    .egr_tvalid            ( vc_dac_valid          ), // output
+    .egr_tready            ( vc_dac_ready          ), // input
+    .cr_recording_enabled  (                       ), // output
+    .cr_playback_enabled   (                       ), // output
+    .awid                  (                       ), // output
+    .awaddr                (                       ), // output
+    .awlen                 (                       ), // output
+    .awvalid               (                       ), // output
+    .awready               (                       ), // input
+    .wdata                 (                       ), // output
+    .wstrb                 (                       ), // output
+    .wlast                 (                       ), // output
+    .wvalid                (                       ), // output
+    .wready                (                       ), // input
+    .arid                  (                       ), // output
+    .araddr                (                       ), // output
+    .arlen                 (                       ), // output
+    .arvalid               (                       ), // output
+    .arready               (                       ), // input
+    .rid                   (                       ), // input
+    .rdata                 (                       ), // input
+    .rlast                 (                       ), // input
+    .rvalid                (                       ), // input
+    .rready                (                       )  // output
   );
-
+*/
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -1015,131 +654,56 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
-  // PLL for the Cirrus ICs
-  // -------------------------------------------------------------------------
-  car_cs5343 car_cs5343_i0 (
-    .clk        ( clk        ), // input
-    .rst_n      ( rst_n      ), // input
-    .clk_mclk   ( clk_mclk   ), // output
-    .rst_mclk_n ( rst_mclk_n )  // output
-  );
-
-
-  // -------------------------------------------------------------------------
   // Cirrus CS5343 ADC, CS4344 DAC
   // -------------------------------------------------------------------------
-  cs5343_i2s2 cs5343_i2s2_i0 (
+  cs5343_top cs5343_top_i0 (
 
     // Clock and reset
-    .clk_mclk        ( clk_mclk         ), // input
-    .rst_n           ( rst_mclk_n       ), // input
+    .clk         ( clk          ), // input
+    .rst_n       ( rst_n        ), // input
+    .clk_mclk    ( clk_mclk     ), // output
+    .rst_mclk_n  ( rst_mclk_n   ), // output
 
     // I/O Cirrus CS5343 (DAC)
-    .tx_mclk         ( cs_tx_mclk       ), // output
-    .tx_lrck         ( cs_tx_lrck       ), // output
-    .tx_sclk         ( cs_tx_sclk       ), // output
-    .tx_sdout        ( cs_tx_sdout      ), // output
+    .cs_tx_mclk  ( cs_tx_mclk   ), // output
+    .cs_tx_lrck  ( cs_tx_lrck   ), // output
+    .cs_tx_sclk  ( cs_tx_sclk   ), // output
+    .cs_tx_sdout ( cs_tx_sdout  ), // output
 
     // I/O Cirrus CS4344 (ADC)
-    .rx_mclk         ( cs_rx_mclk       ), // output
-    .rx_lrck         ( cs_rx_lrck       ), // output
-    .rx_sclk         ( cs_rx_sclk       ), // output
-    .rx_sdin         ( cs_rx_sdin       ), // input
-
-    // AXI-S DAC
-    .tx_axis_s_data  ( cs_dac_data_mux  ), // input
-    .tx_axis_s_valid ( cs_dac_valid_mux ), // input
-    .tx_axis_s_ready ( cs_dac_ready     ), // output
-    .tx_axis_s_last  ( cs_dac_last_mux  ), // input
+    .cs_rx_mclk  ( cs_rx_mclk   ), // output
+    .cs_rx_lrck  ( cs_rx_lrck   ), // output
+    .cs_rx_sclk  ( cs_rx_sclk   ), // output
+    .cs_rx_sdin  ( cs_rx_sdin   ), // input
 
     // AXI-S ADC
-    .rx_axis_m_data  ( cs_adc_data      ), // output
-    .rx_axis_m_valid ( cs_adc_valid     ), // output
-    .rx_axis_m_ready ( cs_adc_ready     ), // input
-    .rx_axis_m_last  ( cs_adc_last      )  // output
-  );
+    .adc_data    ( cs_adc_data  ), // output
+    .adc_valid   ( cs_adc_valid ), // output
+    .adc_ready   ( cs_adc_ready ), // input
+    .adc_last    ( cs_adc_last  ), // output
 
-
-  // -------------------------------------------------------------------------
-  // CDC: Cirrus ADC to System clock
-  // -------------------------------------------------------------------------
-  cdc_vector_sync #(
-    .DATA_WIDTH_P ( 25                         )
-  ) cdc_vector_sync_i0 (
-
-    // Clock and reset (Source)
-    .clk_src      ( clk_mclk                   ), // input
-    .rst_src_n    ( rst_mclk_n                 ), // input
-
-    // Clock and reset (Destination)
-    .clk_dst      ( clk                        ), // input
-    .rst_dst_n    ( rst_n                      ), // input
-
-    // Data (Source)
-    .ing_vector   ( {cs_adc_last, cs_adc_data} ), // input
-    .ing_valid    ( cs_adc_valid               ), // input
-    .ing_ready    ( cs_adc_ready               ), // output
-
-    // Data (Destination)
-    .egr_vector   ( {vc_adc_last, vc_adc_data} ), // output
-    .egr_valid    ( vc_adc_valid               ), // output
-    .egr_ready    ( vc_adc_ready               )  // input
-  );
-
-
-  // -------------------------------------------------------------------------
-  // CDC: System clock to Cirrus DAC
-  // -------------------------------------------------------------------------
-  cdc_vector_sync #(
-    .DATA_WIDTH_P ( 25                           )
-  ) cdc_vector_sync_i1 (
-
-    // Clock and reset (Source)
-    .clk_src      ( clk                          ), // input
-    .rst_src_n    ( rst_n                        ), // input
-
-    // Clock and reset (Destination)
-    .clk_dst      ( clk_mclk                     ), // input
-    .rst_dst_n    ( rst_mclk_n                   ), // input
-
-    // Data (Source)
-    .ing_vector   ( {vc_dac_last, vc_dac_data}   ), // input
-    .ing_valid    ( vc_dac_valid                 ), // input
-    .ing_ready    ( vc_dac_ready                 ), // output
-
-    // Data (Destination)
-    .egr_vector   ( {cs_dac_last0, cs_dac_data0} ), // output
-    .egr_valid    ( cs_dac_valid0                ), // output
-    .egr_ready    ( cs_dac_ready                 )  // input
+    // AXI-S DAC
+    .dac_data    ( cs_dac_data  ), // input
+    .dac_valid   ( cs_dac_valid ), // input
+    .dac_ready   ( cs_dac_ready ), // output
+    .dac_last    ( cs_dac_last  )  // input
   );
 
   // -------------------------------------------------------------------------
-  // Audio Volume
+  // Wrapper for mechanical buttons
   // -------------------------------------------------------------------------
-  axis_volume_controller #(
-    .SWITCH_WIDTH ( 4            ),
-    .DATA_WIDTH   ( 24           )
-  ) axis_volume_controller_i0 (
-
-    // Clock
-    .clk          ( clk          ), // input
-
-    // Switches
-    .sw           ( vc_volume    ), // input
-
-    // Audio in
-    .s_axis_data  ( vc_adc_data  ), // input
-    .s_axis_valid ( vc_adc_valid ), // input
-    .s_axis_ready ( vc_adc_ready ), // output
-    .s_axis_last  ( vc_adc_last  ), // input
-
-    // Audio out
-    .m_axis_data  ( vc_dac_data  ), // output
-    .m_axis_valid ( vc_dac_valid ), // output
-    .m_axis_ready ( vc_dac_ready ), // input
-    .m_axis_last  ( vc_dac_last  )  // output
+  arty_z7_buttons_top arty_z7_buttons_top_i0 (
+    .clk       ( clk       ), // input
+    .rst_n     ( rst_n     ), // input
+    .btn_0     ( btn_0     ), // input
+    .btn_1     ( btn_1     ), // input
+    .btn_2     ( btn_2     ), // input
+    .btn_3     (           ), // input
+    .btn_0_tgl ( btn_0_tgl ), // output
+    .btn_1_tgl ( btn_1_tgl ), // output
+    .btn_2_tgl ( btn_2_tgl ), // output
+    .btn_3_tgl (           )  // output
   );
-
 
   // -------------------------------------------------------------------------
   // Synchronizing Switch 0
@@ -1160,6 +724,45 @@ module project_top #(
     .rst_n       ( rst_n    ),
     .bit_ingress ( sw_1     ),
     .bit_egress  ( switch_1 )
+  );
+
+
+  // -------------------------------------------------------------------------
+  // AXI4 Slave with PL registers
+  // -------------------------------------------------------------------------
+  register_axi_slave #(
+    .AXI_DATA_WIDTH_P    ( AXI_DATA_WIDTH_P      ),
+    .AXI_ADDR_WIDTH_P    ( AXI_ADDR_WIDTH_P      )
+  ) register_axi_slave_i0 (
+
+    .clk                 ( clk                   ), // input
+    .rst_n               ( rst_n                 ), // input
+
+    .awaddr              ( cfg_awaddr            ), // input
+    .awvalid             ( cfg_awvalid           ), // input
+    .awready             ( cfg_awready           ), // output
+
+    .wdata               ( cfg_wdata             ), // input
+    .wstrb               ( cfg_wstrb             ), // input
+    .wvalid              ( cfg_wvalid            ), // input
+    .wready              ( cfg_wready            ), // output
+
+    .bresp               ( cfg_bresp             ), // output
+    .bvalid              ( cfg_bvalid            ), // output
+    .bready              ( cfg_bready            ), // input
+
+    .araddr              ( cfg_araddr            ), // input
+    .arvalid             ( cfg_arvalid           ), // input
+    .arready             ( cfg_arready           ), // output
+
+    .rdata               ( cfg_rdata             ), // output
+    .rresp               ( cfg_rresp             ), // output
+    .rvalid              ( cfg_rvalid            ), // output
+    .rready              ( cfg_rready            ), // input
+
+    .sr_hardware_version ( SR_HARDWARE_VERSION_C ), // input
+    .cmd_irq_clear       ( cmd_irq_clear         ), // output
+    .cr_led_0            ( cr_led_0              )  // output
   );
 
 endmodule

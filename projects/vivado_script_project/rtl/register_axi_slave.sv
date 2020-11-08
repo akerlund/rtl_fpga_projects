@@ -65,17 +65,7 @@ module register_axi_slave #(
     // <PORTS>
     input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_hardware_version,
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear,
-
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0,
-    input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_led_counter,
-
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_axi_address,
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_wdata,
-    input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_rdata,
-
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_write,
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_read,
-    input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_mc_axi4_rdata
+    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0
   );
 
   // ---------------------------------------------------------------------------
@@ -172,21 +162,12 @@ module register_axi_slave #(
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
 
-      // "<RESETS>"
       cr_led_0          <= '0;
-
-      cr_axi_address    <= '0;
-      cr_wdata          <= '0;
-      cmd_mc_axi4_write <= '0;
-      cmd_mc_axi4_read  <= '0;
       cmd_irq_clear     <= '0;
 
     end
     else begin
 
-      // "<COMMANDS>"
-      cmd_mc_axi4_write <= '0;
-      cmd_mc_axi4_read  <= '0;
       cmd_irq_clear     <= '0;
 
       if (write_enable) begin
@@ -204,38 +185,6 @@ module register_axi_slave #(
           5'h01: begin
             for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
               if (wstrb[byte_index] == 1) begin
-                cr_axi_address[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h02: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                cr_wdata[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h03: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                cmd_mc_axi4_write[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h04: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
-                cmd_mc_axi4_read[(byte_index*8) +: 8] <= wdata[(byte_index*8) +: 8];
-              end
-            end
-          end
-
-          5'h08: begin
-            for (byte_index = 0; byte_index <= (AXI_DATA_WIDTH_P/8)-1; byte_index++) begin
-              if (wstrb[byte_index] == 1) begin
                 cmd_irq_clear <= 1;
               end
             end
@@ -244,10 +193,7 @@ module register_axi_slave #(
           default : begin
 
             cr_led_0          <= cr_led_0;
-            cr_axi_address    <= cr_axi_address;
-            cr_wdata          <= cr_wdata;
-            cmd_mc_axi4_write <= cmd_mc_axi4_write;
-            cmd_mc_axi4_read  <= cmd_mc_axi4_read;
+            cmd_irq_clear     <= cmd_irq_clear;
 
           end
         endcase
@@ -338,14 +284,8 @@ module register_axi_slave #(
     // Address decoding for reading registers
     case (araddr_d0[ADDR_LSB_C+OPT_MEM_ADDR_BITS_C : ADDR_LSB_C])
 
-      5'h00   : rdata_d0 <= 1;
+      5'h00   : rdata_d0 <= sr_hardware_version;
       5'h01   : rdata_d0 <= 2;
-      5'h02   : rdata_d0 <= 3;
-      5'h03   : rdata_d0 <= 4;
-      5'h04   : rdata_d0 <= 5;
-      5'h05   : rdata_d0 <= sr_led_counter;
-      5'h06   : rdata_d0 <= 6;
-      5'h07   : rdata_d0 <= sr_hardware_version;
 
       default : rdata_d0 <= '0;
     endcase
