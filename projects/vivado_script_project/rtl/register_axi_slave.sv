@@ -20,8 +20,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module register_axi_slave #(
-    parameter integer AXI_DATA_WIDTH_P = -1,
-    parameter integer AXI_ADDR_WIDTH_P = -1
+    parameter int AXI_DATA_WIDTH_P = -1,
+    parameter int AXI_ADDR_WIDTH_P = -1,
+    parameter int GAIN_WIDTH_P     = -1,
+    parameter int Q_BITS_P         = -1
   )(
 
     // ---------------------------------------------------------------------------
@@ -65,7 +67,10 @@ module register_axi_slave #(
     // <PORTS>
     input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_hardware_version,
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear,
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0
+    output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0,
+    output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_output_gain,
+    output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_0,
+    output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_1
   );
 
   // ---------------------------------------------------------------------------
@@ -91,7 +96,7 @@ module register_axi_slave #(
   logic [AXI_ADDR_WIDTH_P-1 : 0] araddr_d0;
   logic [AXI_DATA_WIDTH_P-1 : 0] rdata_d0;
 
-  integer                        byte_index;
+  int                            byte_index;
 
   // ---------------------------------------------------------------------------
   // Internal assignments
@@ -162,8 +167,11 @@ module register_axi_slave #(
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
 
-      cr_led_0          <= '0;
-      cmd_irq_clear     <= '0;
+      cr_led_0              <= '0;
+      cmd_irq_clear         <= '0;
+      cr_mix_output_gain    <= (1 << Q_BITS_P);
+      cr_mix_channel_gain_0 <= (1 << Q_BITS_P);
+      cr_mix_channel_gain_1 <= (1 << Q_BITS_P);
 
     end
     else begin
@@ -188,6 +196,18 @@ module register_axi_slave #(
                 cmd_irq_clear <= 1;
               end
             end
+          end
+
+          5'h02: begin
+            cr_mix_output_gain <= wdata[GAIN_WIDTH_P-1 : 0];
+          end
+
+          5'h03: begin
+            cr_mix_channel_gain_0 <= wdata[GAIN_WIDTH_P-1 : 0];
+          end
+
+          5'h04: begin
+            cr_mix_channel_gain_1 <= wdata[GAIN_WIDTH_P-1 : 0];
           end
 
           default : begin
@@ -287,7 +307,7 @@ module register_axi_slave #(
       5'h00   : rdata_d0 <= sr_hardware_version;
       5'h01   : rdata_d0 <= 2;
 
-      default : rdata_d0 <= '0;
+      default : rdata_d0 <= 32'hBAADFACE;
     endcase
   end
 
