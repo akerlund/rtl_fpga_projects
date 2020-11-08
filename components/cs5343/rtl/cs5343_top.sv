@@ -23,32 +23,32 @@
 
 module cs5343_top (
 
-  input  wire           clk,
-  input  wire           rst_n,
+    input  wire           clk,
+    input  wire           rst_n,
 
-  output logic          cs_tx_mclk,
-  output logic          cs_tx_lrck,
-  output logic          cs_tx_sclk,
-  output logic          cs_tx_sdout,
+    output logic          clk_mclk,
+    output logic          rst_mclk_n,
 
-  output logic          cs_rx_mclk,
-  output logic          cs_rx_lrck,
-  output logic          cs_rx_sclk,
-  input  wire           cs_rx_sdin,
+    output logic          cs_rx_mclk,
+    output logic          cs_rx_lrck,
+    output logic          cs_rx_sclk,
+    input  wire           cs_rx_sdin,
 
-  output logic [23 : 0] adc_data,
-  output logic          adc_valid,
-  input  wire           adc_ready,
-  output logic          adc_last,
+    output logic          cs_tx_mclk,
+    output logic          cs_tx_lrck,
+    output logic          cs_tx_sclk,
+    output logic          cs_tx_sdout,
 
-  input  wire  [23 : 0] dac_data,
-  input  wire           dac_valid,
-  output logic          dac_ready,
-  input  wire           dac_last
-);
+    output logic [23 : 0] adc_data,
+    output logic          adc_valid,
+    input  wire           adc_ready,
+    output logic          adc_last,
 
-  logic clk_mclk;
-  logic rst_mclk_n;
+    input  wire  [23 : 0] dac_data,
+    input  wire           dac_valid,
+    output logic          dac_ready,
+    input  wire           dac_last
+  );
 
   logic [23 : 0] mclk_dac_data;
   logic          mclk_dac_valid;
@@ -127,9 +127,9 @@ module cs5343_top (
     .ing_ready    ( mclk_adc_ready                 ), // output
 
     // Data (Destination)
-    .egr_vector   ( {cs_adc_last, cs_adc_data}      ), // output
-    .egr_valid    ( cs_adc_valid                    ), // output
-    .egr_ready    ( cs_adc_ready                    )  // input
+    .egr_vector   ( {adc_last, adc_data}           ), // output
+    .egr_valid    ( adc_valid                      ), // output
+    .egr_ready    ( adc_ready                      )  // input
   );
 
 
@@ -158,7 +158,6 @@ module cs5343_top (
     .egr_valid    ( mclk_dac_valid                 ), // output
     .egr_ready    ( mclk_dac_ready                 )  // input
   );
-
 
 endmodule
 

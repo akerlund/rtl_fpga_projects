@@ -149,22 +149,9 @@ module project_top #(
   localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1811;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
-  localparam int                            GAIN_WIDTH_C          = 32;
-  localparam int                            NR_OF_CHANNELS_C      = 1;
-  localparam int                            Q_BITS_C              = 8;
-
-
-  typedef enum {
-    AW_WAIT_FOR_CMD_E,
-    AW_WAIT_FOR_HS_E,
-    W_WAIT_FOR_HS_E
-  } write_state_t;
-
-  typedef enum {
-    AR_WAIT_FOR_CMD_E,
-    AR_WAIT_FOR_HS_E,
-    R_WAIT_FOR_HS_E
-  } read_state_t;
+  localparam int                            GAIN_WIDTH_C          = 24;
+  localparam int                            NR_OF_CHANNELS_C      = 2;
+  localparam int                            Q_BITS_C              = 7;
 
   // -------------------------------------------------------------------------
   // IRQ
@@ -194,14 +181,7 @@ module project_top #(
   // AXI4 registers
   // -------------------------------------------------------------------------
   logic [AXI_DATA_WIDTH_P-1 : 0] cr_led_0;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_led_counter;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_mc_axi4_rdata;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cr_axi_address;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cr_wdata;
   logic [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_write;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_mc_axi4_read;
-  logic [AXI_DATA_WIDTH_P-1 : 0] sr_rdata;
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -243,56 +223,130 @@ module project_top #(
   // Cirrus clock and reset
   // -------------------------------------------------------------------------
 
-  logic          clk_mclk;
-  logic          rst_mclk_n;
+  logic clk_mclk;
+  logic rst_mclk_n;
 
   // -------------------------------------------------------------------------
   // I2S2 PMOD
   // -------------------------------------------------------------------------
 
-  logic [AUDIO_WIDTH_C-1 : 0] cs_dac_data_mux;
-  logic                       cs_dac_last_mux;
-  logic                       cs_dac_valid_mux;
-  logic                       cs_dac_ready;
-
-  logic [AUDIO_WIDTH_C-1 : 0] cs_dac_data0;
-  logic                       cs_dac_last0;
-  logic                       cs_dac_valid0;
   logic [AUDIO_WIDTH_C-1 : 0] cs_adc_data;
   logic                       cs_adc_ready;
   logic                       cs_adc_valid;
   logic                       cs_adc_last;
 
+  logic [AUDIO_WIDTH_C-1 : 0] cs_dac_data;
+  logic                       cs_dac_last;
+  logic                       cs_dac_valid;
+  logic                       cs_dac_ready;
+
   // -------------------------------------------------------------------------
   // Mixer
   // -------------------------------------------------------------------------
 
-  logic signed [NR_OF_CHANNELS_P-1 : 0] [AUDIO_WIDTH_P-1 : 0] channel_data;
-  logic                              [NR_OF_CHANNELS_P-1 : 0] channel_valid;
-  logic signed                          [AUDIO_WIDTH_P-1 : 0] mixed_data;
-  logic                                                       mixed_valid;
-  logic                                                       mixed_ready;
-  logic         [NR_OF_CHANNELS_P-1 : 0] [GAIN_WIDTH_P-1 : 0] cr_channel_gain;
-  logic                                  [GAIN_WIDTH_P-1 : 0] cr_output_gain;
+  logic signed [NR_OF_CHANNELS_C-1 : 0] [AUDIO_WIDTH_C-1 : 0] mix_channel_data;
+  logic                                                       mix_channel_valid;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_left;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_right;
+  logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_right_r0;
+  logic                                                       mix_out_valid;
+  logic                                                       mix_out_ready;
+  logic                              [NR_OF_CHANNELS_C-1 : 0] sr_mix_channel_clip;
+  logic                                                       sr_mix_out_clip;
+  logic         [NR_OF_CHANNELS_C-1 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain;
+  logic                              [NR_OF_CHANNELS_C-1 : 0] cr_mix_channel_pan;
+  logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain;
 
   // -------------------------------------------------------------------------
-  // Volume Controller
+  // Mixer Ingress
   // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : mixer_ingress_p0
+    if (!rst_n) begin
+      mix_channel_data[0]    <= '0;
+      mix_channel_data[1]    <= '0;
+      mix_channel_valid      <= '0;
+      cr_mix_channel_gain[0] <= (1 << Q_BITS_C);
+      cr_mix_channel_gain[1] <= (1 << Q_BITS_C);
+      cr_mix_channel_pan[0]  <= '0;
+      cr_mix_channel_pan[1]  <= '1;
+      cs_adc_ready           <= '1;
+    end
+    else begin
 
-  // Volume controller volume input
-  logic  [3 : 0] vc_volume;
+      mix_channel_valid <= '0;
 
-  // Volume controller ingress (ADC)
-  logic [AUDIO_WIDTH_C-1 : 0] vc_adc_data;
-  logic                       vc_adc_valid;
-  logic                       vc_adc_last;
-  logic                       vc_adc_ready;
+      if (cs_adc_valid && !cs_adc_last) begin
+        mix_channel_data[0] <= cs_adc_data;
+      end
 
-  // Volume controller egress (DAC)
-  logic [AUDIO_WIDTH_C-1 : 0] vc_dac_data;
-  logic                       vc_dac_valid;
-  logic                       vc_dac_last;
-  logic                       vc_dac_ready;
+      if (cs_adc_valid && cs_adc_last) begin
+        mix_channel_data[1] <= cs_adc_data;
+        mix_channel_valid   <= '1;
+      end
+
+    end
+  end
+
+  typedef enum {
+    MIX_WAIT_VALID,
+    MIX_SEND_FIRST,
+    MIX_SEND_LAST
+  } mix_egr_state_t;
+
+  mix_egr_state_t mix_egr_state;
+
+  // -------------------------------------------------------------------------
+  // Mixer Egress
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : mixer_egress_p0
+    if (!rst_n) begin
+
+      mix_egr_state      <= MIX_WAIT_VALID;
+      mix_out_ready      <= '1;
+      mix_out_right_r0   <= '0;
+      cr_mix_output_gain <= (1 << Q_BITS_C);
+      cs_dac_data        <= '0;
+      cs_dac_last        <= '0;
+      cs_dac_valid       <= '0;
+    end
+    else begin
+
+      case (mix_egr_state)
+
+        MIX_WAIT_VALID: begin
+
+          if (mix_out_valid) begin
+            mix_egr_state    <= MIX_SEND_FIRST;
+            mix_out_right_r0 <= mix_out_right;
+            cs_dac_data      <= mix_out_left;
+            cs_dac_last      <= '0;
+            cs_dac_valid     <= '1;
+          end
+        end
+
+        MIX_SEND_FIRST: begin
+
+          if (cs_dac_ready) begin
+            mix_egr_state <= MIX_SEND_LAST;
+            cs_dac_data   <= mix_out_right_r0;
+            cs_dac_last   <= '1;
+          end
+
+        end
+
+        MIX_SEND_LAST: begin
+
+          if (cs_dac_ready) begin
+            mix_egr_state <= MIX_WAIT_VALID;
+            cs_dac_valid  <= '0;
+          end
+        end
+
+      endcase
+
+    end
+  end
+
 
   // -------------------------------------------------------------------------
   // IRQ of AXI Read Channel
@@ -407,22 +461,26 @@ module project_top #(
   end
 
   mixer #(
-    .AUDIO_WIDTH_P    ( AUDIO_WIDTH_P    ),
-    .GAIN_WIDTH_P     ( GAIN_WIDTH_P     ),
-    .NR_OF_CHANNELS_P ( NR_OF_CHANNELS_P ),
-    .Q_BITS_P         ( Q_BITS_P         )
+    .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C       ),
+    .GAIN_WIDTH_P        ( GAIN_WIDTH_C        ),
+    .NR_OF_CHANNELS_P    ( NR_OF_CHANNELS_C    ),
+    .Q_BITS_P            ( Q_BITS_C            )
   ) mixer_i0 (
-    .clk              ( clk              ), // input
-    .rst_n            ( rst_n            ), // input
-    .channel_data     ( channel_data     ), // input
-    .channel_valid    ( channel_valid    ), // input
-    .mixed_data       ( mixed_data       ), // output
-    .mixed_valid      ( mixed_valid      ), // output
-    .mixed_ready      ( mixed_ready      ), // input
-    .cr_channel_gain  ( cr_channel_gain  ), // input
-    .cr_output_gain   ( cr_output_gain   )  // input
+    .clk                 ( clk                 ), // input
+    .rst_n               ( rst_n               ), // input
+    .channel_data        ( mix_channel_data    ), // input
+    .channel_valid       ( mix_channel_valid   ), // input
+    .out_left            ( mix_out_left        ), // output
+    .out_right           ( mix_out_right       ), // output
+    .out_valid           ( mix_out_valid       ), // input
+    .out_ready           ( mix_out_ready       ), // input
+    .sr_mix_channel_clip ( sr_mix_channel_clip ), // output
+    .sr_mix_out_clip     ( sr_mix_out_clip     ), // output
+    .cr_mix_channel_gain ( cr_mix_channel_gain ), // input
+    .cr_mix_channel_pan  ( cr_mix_channel_pan  ), // input
+    .cr_mix_output_gain  ( cr_mix_output_gain  )  // input
   );
-
+/*
   recorder #(
     .AXI_ID_P              ( 420                   ),
     .AXI_ID_WIDTH_P        ( AXI_ID_WIDTH_P        ),
@@ -437,7 +495,7 @@ module project_top #(
     .rst_n                 ( rst_n                 ), // input
     .ing_tdata             ( vc_adc_data           ), // input
     .ing_tvalid            ( vc_adc_valid          ), // input
-    .ing_tready            ( /*vc_adc_ready*/      ), // output
+    .ing_tready            ( ),//vc_adc_ready      ), // output
     .egr_tdata             ( vc_dac_data           ), // output
     .egr_tvalid            ( vc_dac_valid          ), // output
     .egr_tready            ( vc_dac_ready          ), // input
@@ -464,7 +522,7 @@ module project_top #(
     .rvalid                (                       ), // input
     .rready                (                       )  // output
   );
-
+*/
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -601,32 +659,34 @@ module project_top #(
   cs5343_top cs5343_top_i0 (
 
     // Clock and reset
-    .clk         ( clk              ), // input
-    .rst_n       ( rst_mclk_n       ), // input
+    .clk         ( clk          ), // input
+    .rst_n       ( rst_n        ), // input
+    .clk_mclk    ( clk_mclk     ), // output
+    .rst_mclk_n  ( rst_mclk_n   ), // output
 
     // I/O Cirrus CS5343 (DAC)
-    .cs_tx_mclk  ( cs_tx_mclk       ), // output
-    .cs_tx_lrck  ( cs_tx_lrck       ), // output
-    .cs_tx_sclk  ( cs_tx_sclk       ), // output
-    .cs_tx_sdout ( cs_tx_sdout      ), // output
+    .cs_tx_mclk  ( cs_tx_mclk   ), // output
+    .cs_tx_lrck  ( cs_tx_lrck   ), // output
+    .cs_tx_sclk  ( cs_tx_sclk   ), // output
+    .cs_tx_sdout ( cs_tx_sdout  ), // output
 
     // I/O Cirrus CS4344 (ADC)
-    .cs_rx_mclk  ( cs_rx_mclk       ), // output
-    .cs_rx_lrck  ( cs_rx_lrck       ), // output
-    .cs_rx_sclk  ( cs_rx_sclk       ), // output
-    .cs_rx_sdin  ( cs_rx_sdin       ), // input
+    .cs_rx_mclk  ( cs_rx_mclk   ), // output
+    .cs_rx_lrck  ( cs_rx_lrck   ), // output
+    .cs_rx_sclk  ( cs_rx_sclk   ), // output
+    .cs_rx_sdin  ( cs_rx_sdin   ), // input
 
     // AXI-S ADC
-    .adc_data    ( cs_adc_data      ), // output
-    .adc_valid   ( cs_adc_valid     ), // output
-    .adc_ready   ( cs_adc_ready     ), // input
-    .adc_last    ( cs_adc_last      ), // output
+    .adc_data    ( cs_adc_data  ), // output
+    .adc_valid   ( cs_adc_valid ), // output
+    .adc_ready   ( cs_adc_ready ), // input
+    .adc_last    ( cs_adc_last  ), // output
 
     // AXI-S DAC
-    .dac_data    ( cs_dac_data_mux  ), // input
-    .dac_valid   ( cs_dac_valid_mux ), // input
-    .dac_ready   ( cs_dac_ready     ), // output
-    .dac_last    ( cs_dac_last_mux  )  // input
+    .dac_data    ( cs_dac_data  ), // input
+    .dac_valid   ( cs_dac_valid ), // input
+    .dac_ready   ( cs_dac_ready ), // output
+    .dac_last    ( cs_dac_last  )  // input
   );
 
   // -------------------------------------------------------------------------
@@ -702,17 +762,7 @@ module project_top #(
 
     .sr_hardware_version ( SR_HARDWARE_VERSION_C ), // input
     .cmd_irq_clear       ( cmd_irq_clear         ), // output
-    .sr_mc_axi4_rdata    ( '0                    ), // input
-
-    .cr_led_0            ( cr_led_0              ), // output
-    .cr_axi_address      ( cr_axi_address        ), // output
-    .cr_wdata            ( cr_wdata              ), // output
-
-    .cmd_mc_axi4_write   ( cmd_mc_axi4_write     ), // output
-    .cmd_mc_axi4_read    ( cmd_mc_axi4_read      ), // output
-
-    .sr_led_counter      ( sr_led_counter        ), // input
-    .sr_rdata            ( sr_rdata              )  // input
+    .cr_led_0            ( cr_led_0              )  // output
   );
 
 endmodule
