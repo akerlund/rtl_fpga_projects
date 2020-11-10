@@ -24,9 +24,16 @@
 
 // AXI addresses to the FPGA
 #define FPGA_BASEADDR      0x43C00000
-#define LED_0_ADDR         0
-#define MIX_OUTPUT_GAIN    4
-#define MIX_CHANNEL_GAIN_0 8
-#define MIX_CHANNEL_GAIN_1 12
+
+#define LED_0_ADDR         0  // 0
+#define IRQ_CLEAR_ADDR     4  // 1
+#define MIX_OUTPUT_GAIN    8  // 2
+#define MIX_CHANNEL_GAIN_0 12 // 3
+#define MIX_CHANNEL_GAIN_1 16 // 4
+#define CIR_CLEAR_MAX      20 // 5
+#define CIR_MAX_AMPLITUDE  24 // 6
+#define CIR_MIN_AMPLITUDE  24 // 7
+#define CONSTANT           28 // 8
+#define ADC_DATA           32 // 9
 
 #endif

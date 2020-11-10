@@ -146,7 +146,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
-  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 1635;
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2058;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
   localparam int                            GAIN_WIDTH_C          = 24;
@@ -240,6 +240,10 @@ module project_top #(
   logic                       cs_dac_valid;
   logic                       cs_dac_ready;
 
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_amplitude;
+  logic                       cmd_cir_clear_max;
+
   // -------------------------------------------------------------------------
   // Mixer
   // -------------------------------------------------------------------------
@@ -309,6 +313,9 @@ module project_top #(
       cr_mix_channel_pan[0]  <= '0;
       cr_mix_channel_pan[1]  <= '1;
       cs_adc_ready           <= '1;
+      sr_cir_max_amplitude   <= '0;
+      sr_cir_min_amplitude   <= {1'b1, {AUDIO_WIDTH_C{1'b0}}};
+      led_2<='0;
     end
     else begin
 
@@ -322,6 +329,20 @@ module project_top #(
         mix_channel_data[1] <= cs_adc_data;
         mix_channel_valid   <= '1;
       end
+
+      if (cmd_cir_clear_max) begin
+        led_2 <= ~led_2;
+        sr_cir_max_amplitude <= '0;
+      end
+      else if (cs_adc_valid) begin
+        if ($signed(cs_adc_data) > $signed(sr_cir_max_amplitude)) begin
+          sr_cir_max_amplitude <= cs_adc_data;
+        end
+        if ($signed(cs_adc_data) < $signed(sr_cir_min_amplitude)) begin
+          sr_cir_min_amplitude <= cs_adc_data;
+        end
+      end
+
 
     end
   end
@@ -387,7 +408,7 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
-  // IRQ of AXI Read Channel
+  // IRQ 1
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
     if (!rst_n) begin
@@ -395,7 +416,7 @@ module project_top #(
     end
     else begin
       irq_1 <= '0;
-      if (mc_rvalid && mc_rready && mc_rlast) begin
+      if (btn_0_tgl) begin
         irq_1 <= '1;
       end
     end
@@ -449,7 +470,7 @@ module project_top #(
   // -------------------------------------------------------------------------
   // Clock 'clk_mclk' (22.58MHz) with LED process
   // -------------------------------------------------------------------------
-  always_ff @(posedge clk_mclk or negedge rst_mclk_n) begin : led_blink_p1
+  /*always_ff @(posedge clk_mclk or negedge rst_mclk_n) begin : led_blink_p1
 
     if (!rst_mclk_n) begin
 
@@ -468,7 +489,7 @@ module project_top #(
       end
 
     end
-  end
+  end*/
 
 
   // -------------------------------------------------------------------------
@@ -768,6 +789,7 @@ module project_top #(
   register_axi_slave #(
     .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
     .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
+    .AUDIO_WIDTH_P         ( AUDIO_WIDTH_C         ),
     .GAIN_WIDTH_P          ( GAIN_WIDTH_C          ),
     .Q_BITS_P              ( Q_BITS_C              )
   ) register_axi_slave_i0 (
@@ -802,7 +824,11 @@ module project_top #(
     .cr_led_0              ( cr_led_0              ), // output
     .cr_mix_output_gain    ( cr_mix_output_gain    ), // output
     .cr_mix_channel_gain_0 ( cr_mix_channel_gain_0 ), // output
-    .cr_mix_channel_gain_1 ( cr_mix_channel_gain_1 )  // output
+    .cr_mix_channel_gain_1 ( cr_mix_channel_gain_1 ), // output
+    .sr_cir_max_amplitude  ( sr_cir_max_amplitude  ), // input
+    .sr_cir_min_amplitude  ( sr_cir_min_amplitude  ), // input
+    .cmd_cir_clear_max     ( cmd_cir_clear_max     ), // output
+    .adc_data(cs_adc_data)
   );
 
 endmodule

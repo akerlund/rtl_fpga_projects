@@ -22,6 +22,7 @@
 module register_axi_slave #(
     parameter int AXI_DATA_WIDTH_P = -1,
     parameter int AXI_ADDR_WIDTH_P = -1,
+    parameter int AUDIO_WIDTH_P    = -1,
     parameter int GAIN_WIDTH_P     = -1,
     parameter int Q_BITS_P         = -1
   )(
@@ -70,7 +71,11 @@ module register_axi_slave #(
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0,
     output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_output_gain,
     output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_0,
-    output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_1
+    output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_1,
+    input  wire         [AUDIO_WIDTH_P-1 : 0] sr_cir_max_amplitude,
+    input  wire         [AUDIO_WIDTH_P-1 : 0] sr_cir_min_amplitude,
+    output logic                              cmd_cir_clear_max,
+    input  wire         [AUDIO_WIDTH_P-1 : 0] adc_data
   );
 
   // ---------------------------------------------------------------------------
@@ -172,11 +177,13 @@ module register_axi_slave #(
       cr_mix_output_gain    <= (1 << Q_BITS_P);
       cr_mix_channel_gain_0 <= (1 << Q_BITS_P);
       cr_mix_channel_gain_1 <= (1 << Q_BITS_P);
+      cmd_cir_clear_max     <= '0;
 
     end
     else begin
 
       cmd_irq_clear     <= '0;
+      cmd_cir_clear_max <= '0;
 
       if (write_enable) begin
 
@@ -208,6 +215,10 @@ module register_axi_slave #(
 
           5'h04: begin
             cr_mix_channel_gain_1 <= wdata[GAIN_WIDTH_P-1 : 0];
+          end
+
+          5'h05: begin
+            cmd_cir_clear_max <= '1;
           end
 
           default : begin
@@ -301,13 +312,21 @@ module register_axi_slave #(
   // ---------------------------------------------------------------------------
   always_comb begin
 
+    rdata_d0 = '0;
+
     // Address decoding for reading registers
     case (araddr_d0[ADDR_LSB_C+OPT_MEM_ADDR_BITS_C : ADDR_LSB_C])
 
-      5'h00   : rdata_d0 <= sr_hardware_version;
-      5'h01   : rdata_d0 <= 2;
+      5'h00   : rdata_d0                      = sr_hardware_version;
+      5'h02   : rdata_d0[GAIN_WIDTH_P-1 : 0]  = cr_mix_output_gain;
+      5'h03   : rdata_d0[GAIN_WIDTH_P-1 : 0]  = cr_mix_channel_gain_0;
+      5'h04   : rdata_d0[GAIN_WIDTH_P-1 : 0]  = cr_mix_channel_gain_1;
+      5'h06   : rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_max_amplitude;
+      5'h07   : rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_min_amplitude;
+      5'h08   : rdata_d0                      = 32'h0000000F;
+      5'h09   : rdata_d0                      = adc_data;
 
-      default : rdata_d0 <= 32'hBAADFACE;
+      default : rdata_d0 = 32'hBAADFACE;
     endcase
   end
 

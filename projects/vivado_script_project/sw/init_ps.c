@@ -28,12 +28,17 @@ static XScuGic_Config *gic_config;
 // Uart
 XUartPs Uart_PS;
 uint8_t irq_read_uart;
+uint8_t irq_1_triggered;
 
 
 void irq_handler(void *InstancePtr) {
   if (!irq_read_uart) {
     irq_read_uart = 1;
   }
+}
+
+void irq_1_handler(void *InstancePtr) {
+  print("IRQ [irq_1] Button pressed\n\r");
 }
 
 
@@ -63,6 +68,8 @@ int32_t init_interrupt() {
   XScuGic_SetPriorityTriggerType(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_0_INTR, 0x8, 0x3);
   XScuGic_Enable(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_0_INTR);
 
+  init_irq_1();
+
   Xil_ExceptionInit();
   Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT, (Xil_ExceptionHandler) XScuGic_InterruptHandler, &InterruptController);
   Xil_ExceptionEnable();
@@ -70,6 +77,21 @@ int32_t init_interrupt() {
   return XST_SUCCESS;
 }
 
+int32_t init_irq_1() {
+
+  int32_t status;
+
+  status = XScuGic_Connect(&InterruptController, 62U, (Xil_ExceptionHandler)irq_handler, (void *)NULL);
+  if (status != XST_SUCCESS) {
+    print("FAIL [irq_1] XScuGic_Connect\n\r");
+    return XST_FAILURE;
+  }
+  XScuGic_SetPriorityTriggerType(&InterruptController, 62U, 0x8, 0x3);
+  XScuGic_Enable(&InterruptController, 62U);
+
+  print("INFO [irq_1] Init complete\n\r");
+  return XST_SUCCESS;
+}
 
 int32_t init_uart(uint16_t DeviceId){
 

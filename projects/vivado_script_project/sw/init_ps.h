@@ -30,6 +30,8 @@
 
 int32_t init_uart(uint16_t DeviceId);
 int32_t init_interrupt();
+int32_t init_irq_1();
 void    irq_handler(void *InstancePtr);
+void    irq_1_handler(void *InstancePtr);
 
 #endif

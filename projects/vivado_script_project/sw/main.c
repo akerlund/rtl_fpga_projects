@@ -85,10 +85,6 @@ int main() {
   is_parsing      = 0;
   rx_crc_enabled  = 1;
 
-  xil_printf("Hello World\r\n");
-
-  init_interrupt();
-
   status = init_uart(XPAR_XUARTPS_0_DEVICE_ID);
 
   if (status != XST_SUCCESS) {
@@ -97,6 +93,11 @@ int main() {
   } else {
     xil_printf("INFO [uart] UART Operational 2\r\n");
   }
+
+  xil_printf("Hello World\r\n");
+
+  init_interrupt();
+
 
   while (1) {
 

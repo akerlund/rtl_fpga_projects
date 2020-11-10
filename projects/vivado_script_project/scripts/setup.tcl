@@ -84,7 +84,7 @@ proc build_zynq { _git_root    _project_name  _rundir         _fpga_part \
     }
   }
 
-  launch_runs impl_1 -to_step write_bitstream -jobs 12
+  launch_runs impl_1 -to_step write_bitstream -jobs 12 -verbose
   wait_on_run impl_1 -quiet
 
   export_hardware $_rundir $_project_name $_bd_design_name
@@ -93,6 +93,63 @@ proc build_zynq { _git_root    _project_name  _rundir         _fpga_part \
 }
 
 
+proc synth_and_all {rtl_top} {
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] synth_design"
+  puts "--------------------------------------------------------------------------------\n"
+
+  synth_design -top $rtl_top -part 7z020clg484-1
+
+  write_checkpoint      -force $rpt_dir/post_synth.dcp
+  report_timing_summary -file  $rpt_dir/post_synth_timing_summary.rpt
+  report_utilization    -file  $rpt_dir/post_synth_util.rpt
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] opt_design"
+  puts "--------------------------------------------------------------------------------\n"
+
+  opt_design
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] place_design"
+  puts "--------------------------------------------------------------------------------\n"
+
+  place_design
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] report_clock_utilization"
+  puts "--------------------------------------------------------------------------------\n"
+
+  report_clock_utilization -file $rpt_dir/clock_util.rpt
+  if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+  puts "Found setup timing violations: running physical optimization"
+    phys_opt_design
+  }
+
+  write_checkpoint      -force $rpt_dir/post_place.dcp
+  report_utilization    -file  $rpt_dir/post_place_util.rpt
+  report_timing_summary -file  $rpt_dir/post_place_timing_summary.rpt
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] route_design"
+  puts "--------------------------------------------------------------------------------\n"
+
+  route_design
+  write_checkpoint      -force $rpt_dir/post_route.dcp
+
+  report_route_status   -file $rpt_dir/post_route_status.rpt
+  report_timing_summary -file $rpt_dir/post_route_timing_summary.rpt
+  report_power          -file $rpt_dir/post_route_power.rpt
+  report_drc            -file $rpt_dir/post_imp_drc.rpt
+
+  puts "\n--------------------------------------------------------------------------------"
+  puts "INFO \[flow\] write_bitstream"
+  puts "--------------------------------------------------------------------------------\n"
+
+  write_verilog   -force $rpt_dir/cpu_impl_netlist.v -mode timesim -sdf_anno true
+  write_bitstream -force $rpt_dir/cpu.bit
+}
 # ------------------------------------------------------------------------------
 # Description:
 #   Adds verilog files to a project which are read from a file list.
