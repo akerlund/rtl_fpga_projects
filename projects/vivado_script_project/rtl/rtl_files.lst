@@ -1,0 +1,12 @@
+module_path=$git_root/projects/vivado_script_project
+
+rtl_dirs+="
+  +incdir+$module_path/rtl
+"
+
+rtl_files+="
+  $module_path/rtl/register_axi_slave.sv
+  $module_path/rtl/project_top.sv
+"
+
+bd_project="$module_path/rtl/bd_project.tcl"

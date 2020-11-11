@@ -1,0 +1,11 @@
+module_path=$git_root/components/cs5343
+
+rtl_dirs+="
+  +incdir+$module_path/rtl
+"
+
+rtl_files+="
+  $module_path/rtl/cs5343_car.sv
+  $module_path/rtl/cs5343_i2s2.sv
+  $module_path/rtl/cs5343_top.sv
+"
