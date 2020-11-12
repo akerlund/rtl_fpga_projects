@@ -22,6 +22,13 @@ source $git_sub_root/submodules/rtl_common_design/modules/memory/reg/rtl/rtl_fil
 source $git_sub_root/submodules/rtl_common_design/modules/fifo/synchronous_fifo/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/math/multiplication/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/mixer/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/math/cordic/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/math/division/long_division/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/clock_enable/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/clock_enable_scaler/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/delay_enable/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/frequency_enable/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/oscillator/rtl/rtl_files.lst
 
 # Printing out the files
 eval "arr=($rtl_files)"
@@ -33,6 +40,10 @@ for index in "${!arr[@]}"; do
     submodule_files+="${arr[index]} "
   fi
 done
+
+# ------------------------------------------------------------------------------
+# Source modules
+# ------------------------------------------------------------------------------
 
 # Restoring the git root
 git_root="$(git rev-parse --show-toplevel)"

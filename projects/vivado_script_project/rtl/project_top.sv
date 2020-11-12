@@ -150,8 +150,8 @@ module project_top #(
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
   localparam int                            GAIN_WIDTH_C          = 24;
-  localparam int                            NR_OF_CHANNELS_C      = 2;
-  localparam int                            Q_BITS_C              = 7;
+  localparam int                            NR_OF_CHANNELS_C      = 3;
+  //localparam int                            Q_BITS_C              = 7;
 
   // -------------------------------------------------------------------------
   // IRQ
@@ -272,6 +272,29 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
+  // Oscillator
+  // -------------------------------------------------------------------------
+
+
+  localparam int SYS_CLK_FREQUENCY_C  = 125000000;
+  localparam int PRIME_FREQUENCY_C    = 1000000;
+  localparam int WAVE_WIDTH_C         = 24;
+  localparam int DUTY_CYCLE_DIVIDER_C = 1000;
+  localparam int N_BITS_C             = 32;
+  localparam int Q_BITS_C             = 11;
+  localparam int AXI_DATA_WIDTH_C     = 32;
+  localparam int AXI_ID_WIDTH_C       = 32;
+  localparam int AXI_ID_C             = 32'hDEADBEA7;
+
+  logic signed [WAVE_WIDTH_C-1 : 0] osc_waveform;
+  logic                     [1 : 0] cr_osc0_waveform_select;
+  logic            [N_BITS_C-1 : 0] cr_osc0_frequency;
+  logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
+
+
+  assign mix_channel_data[2] = osc_waveform;
+
+  // -------------------------------------------------------------------------
   // Mixer Clip LED
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : mixer_clip_p0
@@ -315,7 +338,7 @@ module project_top #(
       cs_adc_ready           <= '1;
       sr_cir_max_amplitude   <= '0;
       sr_cir_min_amplitude   <= {1'b1, {AUDIO_WIDTH_C{1'b0}}};
-      led_2<='0;
+      led_2                  <= '0;
     end
     else begin
 
@@ -437,7 +460,7 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
-  // Interrupt 'irq_0'
+  // IRQ 1
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
 
@@ -449,7 +472,7 @@ module project_top #(
     end
     else begin
 
-      irq_0         <= '0;
+      irq_0 <= '0;
 
       if (cmd_irq_clear) begin
         irq_0_counter <= '0;
@@ -465,31 +488,6 @@ module project_top #(
 
     end
   end
-
-
-  // -------------------------------------------------------------------------
-  // Clock 'clk_mclk' (22.58MHz) with LED process
-  // -------------------------------------------------------------------------
-  /*always_ff @(posedge clk_mclk or negedge rst_mclk_n) begin : led_blink_p1
-
-    if (!rst_mclk_n) begin
-
-      led_2         <= '0;
-      led_2_counter <= '0;
-
-    end
-    else begin
-
-      if (led_2_counter == 11290000-1) begin
-        led_2         <= ~led_2;
-        led_2_counter <= 0;
-      end
-      else begin
-        led_2_counter <= led_2_counter + 1;
-      end
-
-    end
-  end*/
 
 
   // -------------------------------------------------------------------------
@@ -516,6 +514,9 @@ module project_top #(
     end
   end
 
+  // -------------------------------------------------------------------------
+  // Audio Mixer
+  // -------------------------------------------------------------------------
   mixer #(
     .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C       ),
     .GAIN_WIDTH_P        ( GAIN_WIDTH_C        ),
@@ -536,49 +537,6 @@ module project_top #(
     .cr_mix_channel_pan  ( cr_mix_channel_pan  ), // input
     .cr_mix_output_gain  ( cr_mix_output_gain  )  // input
   );
-/*
-  recorder #(
-    .AXI_ID_P              ( 420                   ),
-    .AXI_ID_WIDTH_P        ( AXI_ID_WIDTH_P        ),
-    .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
-    .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
-    .AXI_STRB_WIDTH_P      ( AXI_STRB_WIDTH_P      ),
-    .RECORD_BIT_WIDTH_P    ( RECORD_BIT_WIDTH_P    ),
-    .MEMORY_BASE_ADDRESS_P ( MEMORY_BASE_ADDRESS_P ),
-    .MEMORY_HIGH_ADDRESS_P ( MEMORY_HIGH_ADDRESS_P )
-  ) recorder_i0 (
-    .clk                   ( clk                   ), // input
-    .rst_n                 ( rst_n                 ), // input
-    .ing_tdata             ( vc_adc_data           ), // input
-    .ing_tvalid            ( vc_adc_valid          ), // input
-    .ing_tready            ( ),//vc_adc_ready      ), // output
-    .egr_tdata             ( vc_dac_data           ), // output
-    .egr_tvalid            ( vc_dac_valid          ), // output
-    .egr_tready            ( vc_dac_ready          ), // input
-    .cr_recording_enabled  (                       ), // output
-    .cr_playback_enabled   (                       ), // output
-    .awid                  (                       ), // output
-    .awaddr                (                       ), // output
-    .awlen                 (                       ), // output
-    .awvalid               (                       ), // output
-    .awready               (                       ), // input
-    .wdata                 (                       ), // output
-    .wstrb                 (                       ), // output
-    .wlast                 (                       ), // output
-    .wvalid                (                       ), // output
-    .wready                (                       ), // input
-    .arid                  (                       ), // output
-    .araddr                (                       ), // output
-    .arlen                 (                       ), // output
-    .arvalid               (                       ), // output
-    .arready               (                       ), // input
-    .rid                   (                       ), // input
-    .rdata                 (                       ), // input
-    .rlast                 (                       ), // input
-    .rvalid                (                       ), // input
-    .rready                (                       )  // output
-  );
-*/
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -787,49 +745,122 @@ module project_top #(
   // AXI4 Slave with PL registers
   // -------------------------------------------------------------------------
   register_axi_slave #(
-    .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
-    .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
-    .AUDIO_WIDTH_P         ( AUDIO_WIDTH_C         ),
-    .GAIN_WIDTH_P          ( GAIN_WIDTH_C          ),
-    .Q_BITS_P              ( Q_BITS_C              )
+    .AXI_DATA_WIDTH_P        ( AXI_DATA_WIDTH_P        ),
+    .AXI_ADDR_WIDTH_P        ( AXI_ADDR_WIDTH_P        ),
+    .AUDIO_WIDTH_P           ( AUDIO_WIDTH_C           ),
+    .GAIN_WIDTH_P            ( GAIN_WIDTH_C            ),
+    .N_BITS_P                ( N_BITS_C                ),
+    .Q_BITS_P                ( Q_BITS_C                )
   ) register_axi_slave_i0 (
 
+    .clk                     ( clk                     ), // input
+    .rst_n                   ( rst_n                   ), // input
+
+    .awaddr                  ( cfg_awaddr              ), // input
+    .awvalid                 ( cfg_awvalid             ), // input
+    .awready                 ( cfg_awready             ), // output
+
+    .wdata                   ( cfg_wdata               ), // input
+    .wstrb                   ( cfg_wstrb               ), // input
+    .wvalid                  ( cfg_wvalid              ), // input
+    .wready                  ( cfg_wready              ), // output
+
+    .bresp                   ( cfg_bresp               ), // output
+    .bvalid                  ( cfg_bvalid              ), // output
+    .bready                  ( cfg_bready              ), // input
+
+    .araddr                  ( cfg_araddr              ), // input
+    .arvalid                 ( cfg_arvalid             ), // input
+    .arready                 ( cfg_arready             ), // output
+
+    .rdata                   ( cfg_rdata               ), // output
+    .rresp                   ( cfg_rresp               ), // output
+    .rvalid                  ( cfg_rvalid              ), // output
+    .rready                  ( cfg_rready              ), // input
+
+    .sr_hardware_version     ( SR_HARDWARE_VERSION_C   ), // input
+    .cmd_irq_clear           ( cmd_irq_clear           ), // output
+    .cr_led_0                ( cr_led_0                ), // output
+    .cr_mix_output_gain      ( cr_mix_output_gain      ), // output
+    .cr_mix_channel_gain_0   ( cr_mix_channel_gain_0   ), // output
+    .cr_mix_channel_gain_1   ( cr_mix_channel_gain_1   ), // output
+    .sr_cir_max_amplitude    ( sr_cir_max_amplitude    ), // input
+    .sr_cir_min_amplitude    ( sr_cir_min_amplitude    ), // input
+    .cmd_cir_clear_max       ( cmd_cir_clear_max       ), // output
+    .cr_osc0_waveform_select ( cr_osc0_waveform_select ), // output
+    .cr_osc0_frequency       ( cr_osc0_frequency       ), // output
+    .cr_osc0_duty_cycle      ( cr_osc0_duty_cycle      )  // output
+  );
+
+
+  // -------------------------------------------------------------------------
+  // Oscillator
+  // -------------------------------------------------------------------------
+  oscillator_system #(
+    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C     ),
+    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C       ),
+    .WAVE_WIDTH_P         ( WAVE_WIDTH_C            ),
+    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C    ),
+    .N_BITS_P             ( N_BITS_C                ),
+    .Q_BITS_P             ( Q_BITS_C                ),
+    .AXI_DATA_WIDTH_P     ( AXI_DATA_WIDTH_C        ),
+    .AXI_ID_WIDTH_P       ( AXI_ID_WIDTH_C          ),
+    .AXI_ID_P             ( AXI_ID_C                )
+  ) oscillator_system_i0 (
+    .clk                  ( clk                     ), // input
+    .rst_n                ( rst_n                   ), // input
+    .waveform             ( osc_waveform            ), // output
+    .cr_waveform_select   ( cr_osc0_waveform_select ), // input
+    .cr_frequency         ( cr_osc0_frequency       ), // input
+    .cr_duty_cycle        ( cr_osc0_duty_cycle      )  // input
+  );
+
+  // -------------------------------------------------------------------------
+  // Recorder (and Playback)
+  // -------------------------------------------------------------------------
+/*
+  recorder #(
+    .AXI_ID_P              ( 420                   ),
+    .AXI_ID_WIDTH_P        ( AXI_ID_WIDTH_P        ),
+    .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
+    .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
+    .AXI_STRB_WIDTH_P      ( AXI_STRB_WIDTH_P      ),
+    .RECORD_BIT_WIDTH_P    ( RECORD_BIT_WIDTH_P    ),
+    .MEMORY_BASE_ADDRESS_P ( MEMORY_BASE_ADDRESS_P ),
+    .MEMORY_HIGH_ADDRESS_P ( MEMORY_HIGH_ADDRESS_P )
+  ) recorder_i0 (
     .clk                   ( clk                   ), // input
     .rst_n                 ( rst_n                 ), // input
-
-    .awaddr                ( cfg_awaddr            ), // input
-    .awvalid               ( cfg_awvalid           ), // input
-    .awready               ( cfg_awready           ), // output
-
-    .wdata                 ( cfg_wdata             ), // input
-    .wstrb                 ( cfg_wstrb             ), // input
-    .wvalid                ( cfg_wvalid            ), // input
-    .wready                ( cfg_wready            ), // output
-
-    .bresp                 ( cfg_bresp             ), // output
-    .bvalid                ( cfg_bvalid            ), // output
-    .bready                ( cfg_bready            ), // input
-
-    .araddr                ( cfg_araddr            ), // input
-    .arvalid               ( cfg_arvalid           ), // input
-    .arready               ( cfg_arready           ), // output
-
-    .rdata                 ( cfg_rdata             ), // output
-    .rresp                 ( cfg_rresp             ), // output
-    .rvalid                ( cfg_rvalid            ), // output
-    .rready                ( cfg_rready            ), // input
-
-    .sr_hardware_version   ( SR_HARDWARE_VERSION_C ), // input
-    .cmd_irq_clear         ( cmd_irq_clear         ), // output
-    .cr_led_0              ( cr_led_0              ), // output
-    .cr_mix_output_gain    ( cr_mix_output_gain    ), // output
-    .cr_mix_channel_gain_0 ( cr_mix_channel_gain_0 ), // output
-    .cr_mix_channel_gain_1 ( cr_mix_channel_gain_1 ), // output
-    .sr_cir_max_amplitude  ( sr_cir_max_amplitude  ), // input
-    .sr_cir_min_amplitude  ( sr_cir_min_amplitude  ), // input
-    .cmd_cir_clear_max     ( cmd_cir_clear_max     ), // output
-    .adc_data(cs_adc_data)
+    .ing_tdata             ( vc_adc_data           ), // input
+    .ing_tvalid            ( vc_adc_valid          ), // input
+    .ing_tready            ( ),//vc_adc_ready      ), // output
+    .egr_tdata             ( vc_dac_data           ), // output
+    .egr_tvalid            ( vc_dac_valid          ), // output
+    .egr_tready            ( vc_dac_ready          ), // input
+    .cr_recording_enabled  (                       ), // output
+    .cr_playback_enabled   (                       ), // output
+    .awid                  (                       ), // output
+    .awaddr                (                       ), // output
+    .awlen                 (                       ), // output
+    .awvalid               (                       ), // output
+    .awready               (                       ), // input
+    .wdata                 (                       ), // output
+    .wstrb                 (                       ), // output
+    .wlast                 (                       ), // output
+    .wvalid                (                       ), // output
+    .wready                (                       ), // input
+    .arid                  (                       ), // output
+    .araddr                (                       ), // output
+    .arlen                 (                       ), // output
+    .arvalid               (                       ), // output
+    .arready               (                       ), // input
+    .rid                   (                       ), // input
+    .rdata                 (                       ), // input
+    .rlast                 (                       ), // input
+    .rvalid                (                       ), // input
+    .rready                (                       )  // output
   );
+*/
 
 endmodule
 

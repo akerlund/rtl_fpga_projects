@@ -24,6 +24,7 @@ module register_axi_slave #(
     parameter int AXI_ADDR_WIDTH_P = -1,
     parameter int AUDIO_WIDTH_P    = -1,
     parameter int GAIN_WIDTH_P     = -1,
+    parameter int N_BITS_P         = -1,
     parameter int Q_BITS_P         = -1
   )(
 
@@ -67,15 +68,21 @@ module register_axi_slave #(
     // ---------------------------------------------------------------------------
     // <PORTS>
     input  wire      [AXI_DATA_WIDTH_P-1 : 0] sr_hardware_version,
+
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear,
     output logic     [AXI_DATA_WIDTH_P-1 : 0] cr_led_0,
+
     output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_output_gain,
     output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_0,
     output logic         [GAIN_WIDTH_P-1 : 0] cr_mix_channel_gain_1,
+
     input  wire         [AUDIO_WIDTH_P-1 : 0] sr_cir_max_amplitude,
     input  wire         [AUDIO_WIDTH_P-1 : 0] sr_cir_min_amplitude,
     output logic                              cmd_cir_clear_max,
-    input  wire         [AUDIO_WIDTH_P-1 : 0] adc_data
+
+    output logic                      [1 : 0] cr_osc0_waveform_select,
+    output logic             [N_BITS_P-1 : 0] cr_osc0_frequency,
+    output logic             [N_BITS_P-1 : 0] cr_osc0_duty_cycle
   );
 
   // ---------------------------------------------------------------------------
@@ -174,9 +181,9 @@ module register_axi_slave #(
 
       cr_led_0              <= '0;
       cmd_irq_clear         <= '0;
-      cr_mix_output_gain    <= (1 << Q_BITS_P);
-      cr_mix_channel_gain_0 <= (1 << Q_BITS_P);
-      cr_mix_channel_gain_1 <= (1 << Q_BITS_P);
+      cr_mix_output_gain    <= (1 <<< Q_BITS_P);
+      cr_mix_channel_gain_0 <= (1 <<< Q_BITS_P);
+      cr_mix_channel_gain_1 <= (1 <<< Q_BITS_P);
       cmd_cir_clear_max     <= '0;
 
     end
@@ -219,6 +226,18 @@ module register_axi_slave #(
 
           5'h05: begin
             cmd_cir_clear_max <= '1;
+          end
+
+          5'h08: begin
+            cr_osc0_waveform_select <= wdata[1 : 0];
+          end
+
+          5'h09: begin
+            cr_osc0_frequency <= wdata[N_BITS_P-1 : 0];
+          end
+
+          5'h0A: begin
+            cr_osc0_duty_cycle <= wdata[N_BITS_P-1 : 0];
           end
 
           default : begin
@@ -323,8 +342,9 @@ module register_axi_slave #(
       5'h04   : rdata_d0[GAIN_WIDTH_P-1 : 0]  = cr_mix_channel_gain_1;
       5'h06   : rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_max_amplitude;
       5'h07   : rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_min_amplitude;
-      5'h08   : rdata_d0                      = 32'h0000000F;
-      5'h09   : rdata_d0                      = adc_data;
+      5'h08   : rdata_d0                      = cr_osc0_waveform_select;
+      5'h09   : rdata_d0                      = cr_osc0_frequency;
+      5'h0A   : rdata_d0                      = cr_osc0_duty_cycle;
 
       default : rdata_d0 = 32'hBAADFACE;
     endcase
