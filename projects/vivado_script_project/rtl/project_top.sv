@@ -146,7 +146,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
-  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2058;
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2244;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
   localparam int                            GAIN_WIDTH_C          = 24;
@@ -260,6 +260,7 @@ module project_top #(
   logic         [NR_OF_CHANNELS_C-1 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_1;
+  logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_2;
 
   logic                              [NR_OF_CHANNELS_C-1 : 0] cr_mix_channel_pan;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain;
@@ -269,6 +270,7 @@ module project_top #(
 
   assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
   assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
+  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;
 
 
   // -------------------------------------------------------------------------
@@ -335,6 +337,7 @@ module project_top #(
       mix_channel_valid      <= '0;
       cr_mix_channel_pan[0]  <= '0;
       cr_mix_channel_pan[1]  <= '1;
+      cr_mix_channel_pan[2]  <= '1;
       cs_adc_ready           <= '1;
       sr_cir_max_amplitude   <= '0;
       sr_cir_min_amplitude   <= {1'b1, {AUDIO_WIDTH_C{1'b0}}};
@@ -436,10 +439,12 @@ module project_top #(
   always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
     if (!rst_n) begin
       irq_1 <= '0;
+      led_0 <= '0;
     end
     else begin
       irq_1 <= '0;
       if (btn_0_tgl) begin
+        led_0 <= ~led_0;
         irq_1 <= '1;
       end
     end
@@ -447,20 +452,7 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
-  // SW controlling LEDs
-  // -------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin : led_toggle_p0
-    if (!rst_n) begin
-      led_0 <= '0;
-    end
-    else begin
-      led_0 <= cr_led_0[0];
-    end
-  end
-
-
-  // -------------------------------------------------------------------------
-  // IRQ 1
+  // IRQ 0
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
 
@@ -744,52 +736,53 @@ module project_top #(
   // -------------------------------------------------------------------------
   // AXI4 Slave with PL registers
   // -------------------------------------------------------------------------
-  register_axi_slave #(
-    .AXI_DATA_WIDTH_P        ( AXI_DATA_WIDTH_P        ),
-    .AXI_ADDR_WIDTH_P        ( AXI_ADDR_WIDTH_P        ),
-    .AUDIO_WIDTH_P           ( AUDIO_WIDTH_C           ),
-    .GAIN_WIDTH_P            ( GAIN_WIDTH_C            ),
-    .N_BITS_P                ( N_BITS_C                ),
-    .Q_BITS_P                ( Q_BITS_C                )
-  ) register_axi_slave_i0 (
+  dafx_axi_slave #(
+    .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P        ),
+    .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P        ),
+    .AUDIO_WIDTH_P            ( AUDIO_WIDTH_C           ),
+    .GAIN_WIDTH_P             ( GAIN_WIDTH_C            ),
+    .N_BITS_P                 ( N_BITS_C                ),
+    .Q_BITS_P                 ( Q_BITS_C                )
+  ) dafx_axi_slave_i0 (
 
-    .clk                     ( clk                     ), // input
-    .rst_n                   ( rst_n                   ), // input
+    .clk                      ( clk                     ), // input
+    .rst_n                    ( rst_n                   ), // input
 
-    .awaddr                  ( cfg_awaddr              ), // input
-    .awvalid                 ( cfg_awvalid             ), // input
-    .awready                 ( cfg_awready             ), // output
+    .awaddr                   ( cfg_awaddr              ), // input
+    .awvalid                  ( cfg_awvalid             ), // input
+    .awready                  ( cfg_awready             ), // output
 
-    .wdata                   ( cfg_wdata               ), // input
-    .wstrb                   ( cfg_wstrb               ), // input
-    .wvalid                  ( cfg_wvalid              ), // input
-    .wready                  ( cfg_wready              ), // output
+    .wdata                    ( cfg_wdata               ), // input
+    .wstrb                    ( cfg_wstrb               ), // input
+    .wvalid                   ( cfg_wvalid              ), // input
+    .wready                   ( cfg_wready              ), // output
 
-    .bresp                   ( cfg_bresp               ), // output
-    .bvalid                  ( cfg_bvalid              ), // output
-    .bready                  ( cfg_bready              ), // input
+    .bresp                    ( cfg_bresp               ), // output
+    .bvalid                   ( cfg_bvalid              ), // output
+    .bready                   ( cfg_bready              ), // input
 
-    .araddr                  ( cfg_araddr              ), // input
-    .arvalid                 ( cfg_arvalid             ), // input
-    .arready                 ( cfg_arready             ), // output
+    .araddr                   ( cfg_araddr              ), // input
+    .arvalid                  ( cfg_arvalid             ), // input
+    .arready                  ( cfg_arready             ), // output
 
-    .rdata                   ( cfg_rdata               ), // output
-    .rresp                   ( cfg_rresp               ), // output
-    .rvalid                  ( cfg_rvalid              ), // output
-    .rready                  ( cfg_rready              ), // input
+    .rdata                    ( cfg_rdata               ), // output
+    .rresp                    ( cfg_rresp               ), // output
+    .rvalid                   ( cfg_rvalid              ), // output
+    .rready                   ( cfg_rready              ), // input
 
-    .sr_hardware_version     ( SR_HARDWARE_VERSION_C   ), // input
-    .cmd_irq_clear           ( cmd_irq_clear           ), // output
-    .cr_led_0                ( cr_led_0                ), // output
-    .cr_mix_output_gain      ( cr_mix_output_gain      ), // output
-    .cr_mix_channel_gain_0   ( cr_mix_channel_gain_0   ), // output
-    .cr_mix_channel_gain_1   ( cr_mix_channel_gain_1   ), // output
-    .sr_cir_max_amplitude    ( sr_cir_max_amplitude    ), // input
-    .sr_cir_min_amplitude    ( sr_cir_min_amplitude    ), // input
-    .cmd_cir_clear_max       ( cmd_cir_clear_max       ), // output
-    .cr_osc0_waveform_select ( cr_osc0_waveform_select ), // output
-    .cr_osc0_frequency       ( cr_osc0_frequency       ), // output
-    .cr_osc0_duty_cycle      ( cr_osc0_duty_cycle      )  // output
+    .sr_hardware_version      ( SR_HARDWARE_VERSION_C   ), // input
+    .cr_mix_output_gain       ( cr_mix_output_gain      ), // output
+    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0   ), // output
+    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1   ), // output
+    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2   ), // output
+    .cr_osc0_waveform_select  ( cr_osc0_waveform_select ), // output
+    .cr_osc0_frequency        ( cr_osc0_frequency       ), // output
+    .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle      ), // output
+    .sr_cir_min_adc_amplitude ( sr_cir_max_amplitude    ), // input
+    .sr_cir_max_adc_amplitude ( sr_cir_min_amplitude    ), // input
+    .cmd_clear_adc_amplitude  ( cmd_cir_clear_max       ), // output
+    .cmd_clear_irq_0          ( cmd_irq_clear           ), // output
+    .cmd_clear_irq_1          (                         )  // output
   );
 
 
