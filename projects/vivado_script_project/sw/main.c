@@ -73,6 +73,7 @@ uint32_t axi_read(uint32_t  baseaddr, uint32_t offset);
 int main() {
 
   int32_t status;
+  uint32_t data;
 
   irq_read_uart   = 0;
   uart_rx_wr_addr = 0;
@@ -94,7 +95,8 @@ int main() {
     xil_printf("INFO [uart] UART Operational 2\r\n");
   }
 
-  xil_printf("Hello World\r\n");
+  data = axi_read(FPGA_BASEADDR, 0);
+  xil_printf("Hello World: %d\r\n", data);
 
   init_interrupt();
 
