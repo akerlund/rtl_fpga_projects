@@ -1,0 +1,159 @@
+---
+dafx:
+  base_addr: "'h00000000"
+  bus_width: 32
+  acronym: "DAFX"
+
+  registers:
+
+    - name:   hardware_version
+      desc:   Hardware version
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_hardware_version,
+          description: Hardware version,
+          size:        AXI_DATA_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   mixer_output_gain
+      desc:   Mixer's output gain
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_mix_output_gain,
+          description: Mixer's output gain,
+          size:        GAIN_WIDTH_P,
+          lsb_pos:     0,
+          reset_value: (1 <<< Q_BITS_P)
+        }
+
+    - name:   mixer_channel_gain_0
+      desc:   Mixer's input gain of channel 0
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_mix_channel_gain_0,
+          description: Mixer's input gain of channel 0,
+          size:        GAIN_WIDTH_P,
+          lsb_pos:     0,
+          reset_value: (1 <<< Q_BITS_P)
+        }
+
+    - name:   mixer_channel_gain_1
+      desc:   Mixer's input gain of channel 1
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_mix_channel_gain_1,
+          description: Mixer's input gain of channel 1,
+          size:        GAIN_WIDTH_P,
+          lsb_pos:     0,
+          reset_value: (1 <<< Q_BITS_P)
+        }
+
+    - name:   mixer_channel_gain_2
+      desc:   Mixer's input gain of channel 2
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_mix_channel_gain_2,
+          description: Mixer's input gain of channel 2,
+          size:        GAIN_WIDTH_P,
+          lsb_pos:     0,
+          reset_value: (1 <<< Q_BITS_P)
+        }
+
+    - name:   osc0_waveform_select
+      desc:   Sets the waveform output of oscillator 0
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_osc0_waveform_select,
+          description: Sets the waveform output of oscillator 0,
+          size:        2,
+          lsb_pos:     0,
+          reset_value: 0x0
+        }
+
+    - name:   osc0_frequency
+      desc:   Sets the frequency of oscillator 0
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_osc0_frequency,
+          description: Sets the frequency of oscillator 0,
+          size:        N_BITS_P,
+          lsb_pos:     0,
+          reset_value: (500 << Q_BITS_P)
+        }
+
+    - name:   osc0_duty_cycle
+      desc:   Sets the duty cycle of the square wave
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_osc0_duty_cycle,
+          description: Sets the duty cycle of the square wave,
+          size:        N_BITS_P,
+          lsb_pos:     0,
+          reset_value: 500
+        }
+
+    - name:   cir_min_adc_amplitude
+      desc:   Lowest value of the ADC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_cir_min_adc_amplitude,
+          description: Lowest value of the ADC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   cir_max_adc_amplitude
+      desc:   Highest value of the ADC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_cir_max_adc_amplitude,
+          description: Highest value of the ADC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   clear_adc_amplitude
+      desc:   Clears the max and min aplitude values
+      access: WO
+      bit_fields:
+        - field: {
+          name:        cmd_clear_adc_amplitude,
+          description: Clears the max and min aplitude values,
+          size:        1,
+          lsb_pos:     0
+        }
+
+    - name:   clear_irq_0
+      desc:   Clears the IRQ0 bit
+      access: WO
+      bit_fields:
+        - field: {
+          name:        cmd_clear_irq_0,
+          description: Clears the IRQ0 bit,
+          size:        1,
+          lsb_pos:     0,
+          reset_value: 0x0
+        }
+
+    - name:   clear_irq_1
+      desc:   Clears the IRQ1 bit
+      access: WO
+      bit_fields:
+        - field: {
+          name:        cmd_clear_irq_1,
+          description: Clears the IRQ1 bit,
+          size:        1,
+          lsb_pos:     0,
+          reset_value: 0x0
+        }
