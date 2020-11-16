@@ -22,9 +22,8 @@
 import dafx_address_pkg::*;
 
 module dafx_axi_slave #(
-    parameter int AXI_DATA_WIDTH_P = -1,
-    parameter int AXI_ADDR_WIDTH_P = -1,
     parameter int AUDIO_WIDTH_P = -1,
+    parameter int AXI_ADDR_WIDTH_P = -1,
     parameter int AXI_DATA_WIDTH_P = -1,
     parameter int GAIN_WIDTH_P = -1,
     parameter int N_BITS_P = -1
@@ -78,6 +77,8 @@ module dafx_axi_slave #(
     output logic         [N_BITS_P-1 : 0] cr_osc0_duty_cycle,
     input  wire     [AUDIO_WIDTH_P-1 : 0] sr_cir_min_adc_amplitude,
     input  wire     [AUDIO_WIDTH_P-1 : 0] sr_cir_max_adc_amplitude,
+    input  wire     [AUDIO_WIDTH_P-1 : 0] sr_cir_min_dac_amplitude,
+    input  wire     [AUDIO_WIDTH_P-1 : 0] sr_cir_max_dac_amplitude,
     output logic                          cmd_clear_adc_amplitude,
     output logic                          cmd_clear_irq_0,
     output logic                          cmd_clear_irq_1
@@ -163,12 +164,12 @@ module dafx_axi_slave #(
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
 
-      cr_mix_output_gain      <= (1 <<< Q_BITS_P);
-      cr_mix_channel_gain_0   <= (1 <<< Q_BITS_P);
-      cr_mix_channel_gain_1   <= (1 <<< Q_BITS_P);
-      cr_mix_channel_gain_2   <= (1 <<< Q_BITS_P);
+      cr_mix_output_gain      <= 1;
+      cr_mix_channel_gain_0   <= 1;
+      cr_mix_channel_gain_1   <= 1;
+      cr_mix_channel_gain_2   <= 1;
       cr_osc0_waveform_select <= 0;
-      cr_osc0_frequency       <= (500 << Q_BITS_P);
+      cr_osc0_frequency       <= 500;
       cr_osc0_duty_cycle      <= 500;
       cmd_clear_irq_0         <= 0;
       cmd_clear_irq_1         <= 0;
@@ -357,6 +358,14 @@ module dafx_axi_slave #(
 
       DAFX_CIR_MAX_ADC_AMPLITUDE_ADDR: begin
         rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_max_adc_amplitude;
+      end
+
+      DAFX_CIR_MIN_DAC_AMPLITUDE_ADDR: begin
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_min_dac_amplitude;
+      end
+
+      DAFX_CIR_MAX_DAC_AMPLITUDE_ADDR: begin
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_max_dac_amplitude;
       end
 
 

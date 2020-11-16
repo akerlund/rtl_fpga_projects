@@ -32,6 +32,8 @@ class dafx_block extends uvm_reg_block;
   rand osc0_duty_cycle_reg osc0_duty_cycle;
   rand cir_min_adc_amplitude_reg cir_min_adc_amplitude;
   rand cir_max_adc_amplitude_reg cir_max_adc_amplitude;
+  rand cir_min_dac_amplitude_reg cir_min_dac_amplitude;
+  rand cir_max_dac_amplitude_reg cir_max_dac_amplitude;
   rand clear_adc_amplitude_reg clear_adc_amplitude;
   rand clear_irq_0_reg clear_irq_0;
   rand clear_irq_1_reg clear_irq_1;
@@ -84,6 +86,14 @@ class dafx_block extends uvm_reg_block;
     cir_max_adc_amplitude.build();
     cir_max_adc_amplitude.configure(this);
 
+    cir_min_dac_amplitude = cir_min_dac_amplitude_reg::type_id::create("cir_min_dac_amplitude");
+    cir_min_dac_amplitude.build();
+    cir_min_dac_amplitude.configure(this);
+
+    cir_max_dac_amplitude = cir_max_dac_amplitude_reg::type_id::create("cir_max_dac_amplitude");
+    cir_max_dac_amplitude.build();
+    cir_max_dac_amplitude.configure(this);
+
     clear_adc_amplitude = clear_adc_amplitude_reg::type_id::create("clear_adc_amplitude");
     clear_adc_amplitude.build();
     clear_adc_amplitude.configure(this);
@@ -110,9 +120,11 @@ class dafx_block extends uvm_reg_block;
     default_map.add_reg(osc0_duty_cycle, 28, "RW");
     default_map.add_reg(cir_min_adc_amplitude, 32, "RO");
     default_map.add_reg(cir_max_adc_amplitude, 36, "RO");
-    default_map.add_reg(clear_adc_amplitude, 40, "WO");
-    default_map.add_reg(clear_irq_0, 44, "WO");
-    default_map.add_reg(clear_irq_1, 48, "WO");
+    default_map.add_reg(cir_min_dac_amplitude, 40, "RO");
+    default_map.add_reg(cir_max_dac_amplitude, 44, "RO");
+    default_map.add_reg(clear_adc_amplitude, 48, "WO");
+    default_map.add_reg(clear_irq_0, 52, "WO");
+    default_map.add_reg(clear_irq_1, 56, "WO");
 
 
     lock_model();

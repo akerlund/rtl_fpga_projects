@@ -85,7 +85,7 @@ class mixer_output_gain_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset((1 <<< Q_BITS_P)),
+      .reset(1),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -124,7 +124,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset((1 <<< Q_BITS_P)),
+      .reset(1),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -163,7 +163,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset((1 <<< Q_BITS_P)),
+      .reset(1),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -202,7 +202,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset((1 <<< Q_BITS_P)),
+      .reset(1),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -280,7 +280,7 @@ class osc0_frequency_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset((500 << Q_BITS_P)),
+      .reset(500),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -403,6 +403,84 @@ class cir_max_adc_amplitude_reg extends uvm_reg;
       .individually_accessible(0)
     );
     add_hdl_path_slice("sr_cir_max_adc_amplitude", 0, AUDIO_WIDTH_P);
+
+  endfunction
+
+endclass
+
+// -----------------------------------------------------------------------------
+// Lowest value of the DAC
+// -----------------------------------------------------------------------------
+class cir_min_dac_amplitude_reg extends uvm_reg;
+
+  `uvm_object_utils(cir_min_dac_amplitude_reg)
+
+  rand uvm_reg_field sr_cir_min_dac_amplitude;
+
+
+  function new (string name = "cir_min_dac_amplitude_reg");
+    super.new(name, 32, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Lowest value of the DAC
+    // -----------------------------------------------------------------------------
+    sr_cir_min_dac_amplitude = uvm_reg_field::type_id::create("sr_cir_min_dac_amplitude");
+    sr_cir_min_dac_amplitude.configure(
+      .parent(this),
+      .size(AUDIO_WIDTH_P),
+      .lsb_pos(0),
+      .access("RO"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(0),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("sr_cir_min_dac_amplitude", 0, AUDIO_WIDTH_P);
+
+  endfunction
+
+endclass
+
+// -----------------------------------------------------------------------------
+// Highest value of the DAC
+// -----------------------------------------------------------------------------
+class cir_max_dac_amplitude_reg extends uvm_reg;
+
+  `uvm_object_utils(cir_max_dac_amplitude_reg)
+
+  rand uvm_reg_field sr_cir_max_dac_amplitude;
+
+
+  function new (string name = "cir_max_dac_amplitude_reg");
+    super.new(name, 32, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Highest value of the DAC
+    // -----------------------------------------------------------------------------
+    sr_cir_max_dac_amplitude = uvm_reg_field::type_id::create("sr_cir_max_dac_amplitude");
+    sr_cir_max_dac_amplitude.configure(
+      .parent(this),
+      .size(AUDIO_WIDTH_P),
+      .lsb_pos(0),
+      .access("RO"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(0),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("sr_cir_max_dac_amplitude", 0, AUDIO_WIDTH_P);
 
   endfunction
 

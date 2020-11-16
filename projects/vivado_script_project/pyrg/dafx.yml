@@ -26,7 +26,7 @@ dafx:
           description: Mixer's output gain,
           size:        GAIN_WIDTH_P,
           lsb_pos:     0,
-          reset_value: (1 <<< Q_BITS_P)
+          reset_value: 1
         }
 
     - name:   mixer_channel_gain_0
@@ -38,7 +38,7 @@ dafx:
           description: Mixer's input gain of channel 0,
           size:        GAIN_WIDTH_P,
           lsb_pos:     0,
-          reset_value: (1 <<< Q_BITS_P)
+          reset_value: 1
         }
 
     - name:   mixer_channel_gain_1
@@ -50,7 +50,7 @@ dafx:
           description: Mixer's input gain of channel 1,
           size:        GAIN_WIDTH_P,
           lsb_pos:     0,
-          reset_value: (1 <<< Q_BITS_P)
+          reset_value: 1
         }
 
     - name:   mixer_channel_gain_2
@@ -62,7 +62,7 @@ dafx:
           description: Mixer's input gain of channel 2,
           size:        GAIN_WIDTH_P,
           lsb_pos:     0,
-          reset_value: (1 <<< Q_BITS_P)
+          reset_value: 1
         }
 
     - name:   osc0_waveform_select
@@ -86,7 +86,7 @@ dafx:
           description: Sets the frequency of oscillator 0,
           size:        N_BITS_P,
           lsb_pos:     0,
-          reset_value: (500 << Q_BITS_P)
+          reset_value: 500
         }
 
     - name:   osc0_duty_cycle
@@ -119,6 +119,28 @@ dafx:
         - field: {
           name:        sr_cir_max_adc_amplitude,
           description: Highest value of the ADC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   cir_min_dac_amplitude
+      desc:   Lowest value of the DAC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_cir_min_dac_amplitude,
+          description: Lowest value of the DAC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   cir_max_dac_amplitude
+      desc:   Highest value of the DAC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_cir_max_dac_amplitude,
+          description: Highest value of the DAC,
           size:        AUDIO_WIDTH_P,
           lsb_pos:     0
         }

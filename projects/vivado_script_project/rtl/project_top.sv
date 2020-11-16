@@ -146,7 +146,7 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
-  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2244;
+  localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2012;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
   localparam int                            GAIN_WIDTH_C          = 24;
@@ -268,9 +268,9 @@ module project_top #(
   logic                                                       clip_detected;
   logic                                              [31 : 0] clip_counter;
 
-  assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
-  assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
-  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;
+  assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0 << Q_BITS_C;
+  assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1 << Q_BITS_C;
+  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2 << Q_BITS_C;
 
 
   // -------------------------------------------------------------------------
@@ -294,7 +294,7 @@ module project_top #(
   logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
 
 
-  assign mix_channel_data[2] = osc_waveform;
+  assign mix_channel_data[2] = osc_waveform <<< 20;
 
   // -------------------------------------------------------------------------
   // Mixer Clip LED
@@ -510,24 +510,24 @@ module project_top #(
   // Audio Mixer
   // -------------------------------------------------------------------------
   mixer #(
-    .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C       ),
-    .GAIN_WIDTH_P        ( GAIN_WIDTH_C        ),
-    .NR_OF_CHANNELS_P    ( NR_OF_CHANNELS_C    ),
-    .Q_BITS_P            ( Q_BITS_C            )
+    .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C                   ),
+    .GAIN_WIDTH_P        ( GAIN_WIDTH_C                    ),
+    .NR_OF_CHANNELS_P    ( NR_OF_CHANNELS_C                ),
+    .Q_BITS_P            ( Q_BITS_C                        )
   ) mixer_i0 (
-    .clk                 ( clk                 ), // input
-    .rst_n               ( rst_n               ), // input
-    .channel_data        ( mix_channel_data    ), // input
-    .channel_valid       ( mix_channel_valid   ), // input
-    .out_left            ( mix_out_left        ), // output
-    .out_right           ( mix_out_right       ), // output
-    .out_valid           ( mix_out_valid       ), // input
-    .out_ready           ( mix_out_ready       ), // input
-    .sr_mix_channel_clip ( sr_mix_channel_clip ), // output
-    .sr_mix_out_clip     ( sr_mix_out_clip     ), // output
-    .cr_mix_channel_gain ( cr_mix_channel_gain ), // input
-    .cr_mix_channel_pan  ( cr_mix_channel_pan  ), // input
-    .cr_mix_output_gain  ( cr_mix_output_gain  )  // input
+    .clk                 ( clk                             ), // input
+    .rst_n               ( rst_n                           ), // input
+    .channel_data        ( mix_channel_data                ), // input
+    .channel_valid       ( mix_channel_valid               ), // input
+    .out_left            ( mix_out_left                    ), // output
+    .out_right           ( mix_out_right                   ), // output
+    .out_valid           ( mix_out_valid                   ), // input
+    .out_ready           ( mix_out_ready                   ), // input
+    .sr_mix_channel_clip ( sr_mix_channel_clip             ), // output
+    .sr_mix_out_clip     ( sr_mix_out_clip                 ), // output
+    .cr_mix_channel_gain ( cr_mix_channel_gain             ), // input
+    .cr_mix_channel_pan  ( cr_mix_channel_pan              ), // input
+    .cr_mix_output_gain  ( cr_mix_output_gain  << Q_BITS_C )  // input
   );
 
   // -------------------------------------------------------------------------
@@ -741,8 +741,7 @@ module project_top #(
     .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P        ),
     .AUDIO_WIDTH_P            ( AUDIO_WIDTH_C           ),
     .GAIN_WIDTH_P             ( GAIN_WIDTH_C            ),
-    .N_BITS_P                 ( N_BITS_C                ),
-    .Q_BITS_P                 ( Q_BITS_C                )
+    .N_BITS_P                 ( N_BITS_C                )
   ) dafx_axi_slave_i0 (
 
     .clk                      ( clk                     ), // input
@@ -780,6 +779,8 @@ module project_top #(
     .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle      ), // output
     .sr_cir_min_adc_amplitude ( sr_cir_max_amplitude    ), // input
     .sr_cir_max_adc_amplitude ( sr_cir_min_amplitude    ), // input
+    .sr_cir_min_dac_amplitude ( '0                      ), // input
+    .sr_cir_max_dac_amplitude ( '0                      ), // input
     .cmd_clear_adc_amplitude  ( cmd_cir_clear_max       ), // output
     .cmd_clear_irq_0          ( cmd_irq_clear           ), // output
     .cmd_clear_irq_1          (                         )  // output
@@ -804,7 +805,7 @@ module project_top #(
     .rst_n                ( rst_n                   ), // input
     .waveform             ( osc_waveform            ), // output
     .cr_waveform_select   ( cr_osc0_waveform_select ), // input
-    .cr_frequency         ( cr_osc0_frequency       ), // input
+    .cr_frequency         ( cr_osc0_frequency << Q_BITS_C ), // input
     .cr_duty_cycle        ( cr_osc0_duty_cycle      )  // input
   );
 
