@@ -27,18 +27,18 @@ static XScuGic_Config *gic_config;
 
 // Uart
 XUartPs Uart_PS;
-uint8_t irq_read_uart;
+uint8_t irq_0_triggered;
 uint8_t irq_1_triggered;
 
 
 void irq_0_handler(void *InstancePtr) {
-  if (!irq_read_uart) {
-    irq_read_uart = 1;
+  if (!irq_0_triggered) {
+    irq_0_triggered = 1;
   }
 }
 
 void irq_1_handler(void *InstancePtr) {
-  print("IRQ [irq_1] Button pressed\n\r");
+  irq_1_triggered = 1;
 }
 
 
@@ -48,20 +48,20 @@ int32_t init_interrupt() {
 
   gic_config = XScuGic_LookupConfig(XPAR_PS7_SCUGIC_0_DEVICE_ID);
   if (NULL == gic_config) {
-    print("FAIL [irq] XScuGic_LookupConfig\n\r");
+    xil_printf("%sFAIL [irq] XScuGic_LookupConfig\n\r", STR_C);
     return XST_FAILURE;
   }
 
 
   status = XScuGic_CfgInitialize(&InterruptController, gic_config, gic_config->CpuBaseAddress);
   if (status != XST_SUCCESS) {
-    print("FAIL [irq] XScuGic_CfgInitialize\n\r");
+    xil_printf("%sFAIL [irq] XScuGic_CfgInitialize\n\r", STR_C);
     return XST_FAILURE;
   }
 
   status = XScuGic_Connect(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_0_INTR, (Xil_ExceptionHandler)irq_0_handler, (void *)NULL);
   if (status != XST_SUCCESS) {
-    print("FAIL [irq] XScuGic_Connect\n\r");
+    xil_printf("%sFAIL [irq] XScuGic_Connect\n\r", STR_C);
     return XST_FAILURE;
   }
 
@@ -83,13 +83,13 @@ int32_t init_irq_1() {
 
   status = XScuGic_Connect(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_1_INTR, (Xil_ExceptionHandler)irq_1_handler, (void *)NULL);
   if (status != XST_SUCCESS) {
-    print("FAIL [irq_1] XScuGic_Connect\n\r");
+    xil_printf("%sFAIL [irq_1] XScuGic_Connect\n\r", STR_C);
     return XST_FAILURE;
   }
   XScuGic_SetPriorityTriggerType(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_1_INTR, 0x8, 0x3);
   XScuGic_Enable(&InterruptController, XPAR_FABRIC_BD_PROJECT_TOP_0_IRQ_1_INTR);
 
-  print("INFO [irq_1] Init complete\n\r");
+  xil_printf("%sINFO [irq_1] Init complete\n\r", STR_C);
   return XST_SUCCESS;
 }
 
@@ -100,19 +100,19 @@ int32_t init_uart(uint16_t DeviceId){
 
   config = XUartPs_LookupConfig(DeviceId);
   if (NULL == config) {
-    print("FAIL [irq] XUartPs_LookupConfig\n\r");
+    xil_printf("%sFAIL [irq] XUartPs_LookupConfig\n\r", STR_C);
     return XST_FAILURE;
   }
 
   status = XUartPs_CfgInitialize(&Uart_PS, config, config->BaseAddress);
   if (status != XST_SUCCESS) {
-    print("FAIL [irq] XUartPs_CfgInitialize\n\r");
+    xil_printf("%sFAIL [irq] XUartPs_CfgInitialize\n\r", STR_C);
     return XST_FAILURE;
   }
 
   status = XUartPs_SelfTest(&Uart_PS);
   if (status != XST_SUCCESS) {
-    print("FAIL [irq] XUartPs_SelfTest\n\r");
+    xil_printf("%sFAIL [irq] XUartPs_SelfTest\n\r", STR_C);
     return XST_FAILURE;
   }
 

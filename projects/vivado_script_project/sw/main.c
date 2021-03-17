@@ -25,20 +25,20 @@
 #include "xuartps.h"
 #include "xparameters.h"
 #include "crc_16.h"
-#include "cfg_addr_map.h"
+#include "dafx_address.h"
+#include "qhost_defines.h"
 #include "init_ps.h"
 #include "byte_vector.h"
 
 
 // Constants
-#define              UART_BUFFER_SIZE_C 256
-static const uint8_t LENGTH_8_BITS_C  = 0xAA;
-static const uint8_t LENGTH_16_BITS_C = 0x55;
-
+#define FPGA_BASEADDR      0x43C00000
+#define UART_BUFFER_SIZE_C 256
 
 // UART
 extern   XUartPs Uart_PS;
-extern   uint8_t irq_read_uart;
+extern   uint8_t irq_0_triggered;
+extern   uint8_t irq_1_triggered;
 volatile int32_t is_parsing;
 static   uint8_t uart_rx_buffer[UART_BUFFER_SIZE_C];
 volatile uint8_t uart_rx_wr_addr;
@@ -57,15 +57,19 @@ typedef enum {
 rx_state_t       rx_state;
 volatile int32_t rx_crc_enabled;
 static   uint8_t rx_buffer[UART_BUFFER_SIZE_C];
+static   uint8_t tx_buffer[UART_BUFFER_SIZE_C];
 volatile int32_t rx_length;
 volatile int32_t rx_addr;
+volatile int32_t tx_length;
+volatile int32_t tx_addr;
 volatile int16_t rx_crc_high;
 volatile int16_t rx_crc_low;
 
 // Functions
 void     nops(uint32_t num);
 void     parse_uart_rx();
-void     handle_rx_data();
+void     isr_1(uint8_t *tx_buffer);
+void     handle_rx_data(uint8_t *buffer);
 void     axi_write(uint32_t baseaddr, uint32_t offset, int32_t value);
 uint32_t axi_read(uint32_t  baseaddr, uint32_t offset);
 
@@ -75,7 +79,7 @@ int main() {
   int32_t status;
   uint32_t data;
 
-  irq_read_uart   = 0;
+  irq_0_triggered = 0;
   uart_rx_wr_addr = 0;
   uart_rx_rd_addr = 0;
   rx_state        = RX_IDLE_E;
@@ -89,31 +93,40 @@ int main() {
   status = init_uart(XPAR_XUARTPS_0_DEVICE_ID);
 
   if (status != XST_SUCCESS) {
-    xil_printf("ERROR [uart] UART Initialization Failed\r\n");
+    xil_printf("%cERROR [uart] UART Initialization Failed\n", STR_C);
     return XST_FAILURE;
   } else {
-    xil_printf("INFO [uart] UART Operational 2\r\n");
+    xil_printf("%cINFO [uart] UART Operational 4\n", STR_C);
   }
 
   data = axi_read(FPGA_BASEADDR, 0);
-  xil_printf("Hello World: %d\r\n", data);
+  xil_printf("%cHello World: %d\n", STR_C, data);
 
   init_interrupt();
 
 
   while (1) {
 
-    if (irq_read_uart) {
+    // IRQ0: Read the UART RX buffer
+    if (irq_0_triggered) {
       uart_rx_wr_addr += XUartPs_Recv(&Uart_PS, &uart_rx_buffer[uart_rx_wr_addr], (UART_BUFFER_SIZE_C - uart_rx_wr_addr));
-      irq_read_uart = 0;
+      irq_0_triggered = 0;
     }
 
+    // IRQ1: Read the mixer's output and send to host
+    if (irq_1_triggered) {
+      //isr_1(tx_buffer);
+      irq_1_triggered = 0;
+    }
+
+    // Checking if data has been written to the UART RX buffer
     if (uart_rx_rd_addr != uart_rx_wr_addr && !is_parsing) {
     	is_parsing = 1;
         parse_uart_rx();
         is_parsing = 0;
     }
 
+    // Reset the RX write address to 0 if it has reached the high address
     if (uart_rx_wr_addr == UART_BUFFER_SIZE_C) {
       uart_rx_wr_addr = 0;
     }
@@ -154,6 +167,7 @@ void parse_uart_rx() {
 
 
       case RX_LENGTH_LOW_E:
+	    xil_printf("%cRX_LENGTH_LOW_E\r", STR_C);
 
         rx_length |= (uint32_t)rx_data;
 
@@ -193,7 +207,7 @@ void parse_uart_rx() {
         if (crc_16(rx_buffer, rx_length) == (uint16_t)(rx_crc_high | rx_crc_low)) {
           handle_rx_data(rx_buffer);
         } else {
-          printf("Bad CRC, %x != %x\r\n", crc_16(rx_buffer, rx_length), (rx_crc_high | rx_crc_low));
+          xil_printf("%cBad CRC, %x != %x\r\n", STR_C, crc_16(rx_buffer, rx_length), (rx_crc_high | rx_crc_low));
         }
 
         rx_state = RX_IDLE_E;
@@ -210,7 +224,18 @@ void parse_uart_rx() {
 }
 
 
-void handle_rx_data(const uint8_t *buffer) {
+void isr_1(uint8_t *tx_buffer) {
+
+  uint32_t data;
+  int32_t  index = 1;
+  tx_buffer[0]  = SAMPLE_MIXER_LEFT_C;
+  data          = axi_read(FPGA_BASEADDR, DAFX_MIX_OUT_LEFT_ADDR);
+  vector_append_uint32(tx_buffer, data, &index);
+  XUartPs_Send(&Uart_PS, tx_buffer, 5);
+}
+
+
+void handle_rx_data(uint8_t *buffer) {
 
   int32_t  index = 1;
   uint32_t data;
@@ -220,15 +245,19 @@ void handle_rx_data(const uint8_t *buffer) {
   if (rx_buffer[0] == 'W' && rx_length == 9) {
     addr = vector_get_uint32(buffer, &index);
     data = vector_get_uint32(buffer, &index);
-    xil_printf("INFO [rx] waddr(%u) wdata(%u)\r", addr, data);
+    xil_printf("%cINFO [rx] waddr(%u) wdata(%u)\r", STR_C, addr, data);
     axi_write(FPGA_BASEADDR, addr, data);
   }
 
-  if (rx_buffer[0] == 'R' && rx_length == 5) {
+  else if (rx_buffer[0] == 'R' && rx_length == 5) {
 
       addr = vector_get_uint32(buffer, &index);
       data = axi_read(FPGA_BASEADDR, addr);
-      xil_printf("INFO [rx] raddr(%u) rdata(%u)\r", addr, data);
+      xil_printf("%cINFO [rx] raddr(%u) rdata(%d)\r", STR_C, addr, data);
+  }
+
+  else {
+      xil_printf("%cINFO [rx] Unknown\r", STR_C);
   }
 }
 

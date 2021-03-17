@@ -18,21 +18,18 @@
 // Description:
 //
 ////////////////////////////////////////////////////////////////////////////////
+#ifndef QHOST_DEFINES_H
+#define QHOST_DEFINES_H
 
-#include <stdint.h>
-#include <stdio.h>
-#include "xil_printf.h"
-#include "xscugic.h"
-#include "xuartps.h"
-#include "qhost_defines.h"
+  #define LENGTH_8_BITS_C      0xAA
+  #define LENGTH_16_BITS_C     0x55
+  #define CRC_ENABLED_BIT_C    0x80
+  #define STRING_C             0x50
+  #define SAMPLE_MIXER_LEFT_C  0x51
+  #define SAMPLE_MIXER_RIGHT_C 0x52
 
-#ifndef INIT_PS_H
-#define INIT_PS_H
-
-int32_t init_uart(uint16_t DeviceId);
-int32_t init_interrupt();
-int32_t init_irq_1();
-void    irq_0_handler(void *InstancePtr);
-void    irq_1_handler(void *InstancePtr);
+  #define CRC_C     CRC_ENABLED_BIT_C
+  #define STR_C     STRING_C
+  #define CRC_STR_C CRC_ENABLED_BIT_C | STRING_C
 
 #endif
