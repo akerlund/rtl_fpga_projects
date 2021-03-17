@@ -1,4 +1,4 @@
-module_path=$git_root/projects/vivado_script_project
+module_path=$git_root/projects/dafx
 
 rtl_dirs+="
   +incdir+$module_path/rtl

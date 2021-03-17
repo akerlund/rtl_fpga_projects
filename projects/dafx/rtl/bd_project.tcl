@@ -4,7 +4,7 @@
 set _git_root             [exec git rev-parse --show-toplevel]
 puts "Git root = ($_git_root)"
 
-set _project_name         "vivado_script_project"
+set _project_name         "dafx"
 set _project_path         $_git_root/projects/$_project_name
 set _rundir [pwd]
 puts "_project_path = ($_project_path)"
