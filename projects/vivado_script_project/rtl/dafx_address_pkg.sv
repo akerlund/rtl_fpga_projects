@@ -23,7 +23,7 @@
 
 package dafx_address_pkg;
 
-  localparam logic [31 : 0] DAFX_HIGH_ADDRESS               = 32'h003C;
+  localparam logic [31 : 0] DAFX_HIGH_ADDRESS               = 32'h0044;
   localparam logic [31 : 0] DAFX_HARDWARE_VERSION_ADDR      = 32'h0000;
   localparam logic [31 : 0] DAFX_MIXER_OUTPUT_GAIN_ADDR     = 32'h0004;
   localparam logic [31 : 0] DAFX_MIXER_CHANNEL_GAIN_0_ADDR  = 32'h0008;
@@ -39,6 +39,8 @@ package dafx_address_pkg;
   localparam logic [31 : 0] DAFX_CLEAR_ADC_AMPLITUDE_ADDR   = 32'h0030;
   localparam logic [31 : 0] DAFX_CLEAR_IRQ_0_ADDR           = 32'h0034;
   localparam logic [31 : 0] DAFX_CLEAR_IRQ_1_ADDR           = 32'h0038;
+  localparam logic [31 : 0] DAFX_MIX_OUT_LEFT_ADDR          = 32'h003C;
+  localparam logic [31 : 0] DAFX_MIX_OUT_RIGHT_ADDR         = 32'h0040;
 
 endpackage
 

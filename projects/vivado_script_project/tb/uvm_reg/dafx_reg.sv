@@ -603,3 +603,81 @@ class clear_irq_1_reg extends uvm_reg;
 
 endclass
 
+// -----------------------------------------------------------------------------
+// Current left value forwarded to the DAC
+// -----------------------------------------------------------------------------
+class mix_out_left_reg extends uvm_reg;
+
+  `uvm_object_utils(mix_out_left_reg)
+
+  rand uvm_reg_field sr_mix_out_left;
+
+
+  function new (string name = "mix_out_left_reg");
+    super.new(name, 32, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Current left value forwarded to the DAC
+    // -----------------------------------------------------------------------------
+    sr_mix_out_left = uvm_reg_field::type_id::create("sr_mix_out_left");
+    sr_mix_out_left.configure(
+      .parent(this),
+      .size(AUDIO_WIDTH_P),
+      .lsb_pos(0),
+      .access("RO"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(0),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("sr_mix_out_left", 0, AUDIO_WIDTH_P);
+
+  endfunction
+
+endclass
+
+// -----------------------------------------------------------------------------
+// Current right value forwarded to the DAC
+// -----------------------------------------------------------------------------
+class mix_out_right_reg extends uvm_reg;
+
+  `uvm_object_utils(mix_out_right_reg)
+
+  rand uvm_reg_field sr_mix_out_right;
+
+
+  function new (string name = "mix_out_right_reg");
+    super.new(name, 32, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Current right value forwarded to the DAC
+    // -----------------------------------------------------------------------------
+    sr_mix_out_right = uvm_reg_field::type_id::create("sr_mix_out_right");
+    sr_mix_out_right.configure(
+      .parent(this),
+      .size(AUDIO_WIDTH_P),
+      .lsb_pos(0),
+      .access("RO"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(0),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("sr_mix_out_right", 0, AUDIO_WIDTH_P);
+
+  endfunction
+
+endclass
+

@@ -146,17 +146,37 @@ module project_top #(
     input  wire                                   cs_rx_sdin
   );
 
+  // -------------------------------------------------------------------------
+  // Constants
+  // -------------------------------------------------------------------------
+
+  // Common
+  localparam int                            SYS_CLK_FREQUENCY_C  = 125000000;
   localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2012;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
   localparam int                            GAIN_WIDTH_C          = 24;
   localparam int                            NR_OF_CHANNELS_C      = 3;
-  //localparam int                            Q_BITS_C              = 7;
+
+  // Sampling
+  localparam int                            HOST_F_SAMPLING_C      = 10000;
+  localparam int                            SAMPLING_IRQ_COUNTER_C = SYS_CLK_FREQUENCY_C / HOST_F_SAMPLING_C;
+
+  // Oscillator
+  localparam int PRIME_FREQUENCY_C    = 1000000;
+  localparam int WAVE_WIDTH_C         = 24;
+  localparam int DUTY_CYCLE_DIVIDER_C = 1000;
+  localparam int N_BITS_C             = 32;
+  localparam int Q_BITS_C             = 11;
+  localparam int AXI_DATA_WIDTH_C     = 32;
+  localparam int AXI_ID_WIDTH_C       = 32;
+  localparam int AXI_ID_C             = 32'hDEADBEA7;
 
   // -------------------------------------------------------------------------
   // IRQ
   // -------------------------------------------------------------------------
   logic [AXI_DATA_WIDTH_P-1 : 0] irq_0_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] irq_1_counter;
 
   // -------------------------------------------------------------------------
   // Toggling LED
@@ -181,7 +201,7 @@ module project_top #(
   // AXI4 registers
   // -------------------------------------------------------------------------
   logic [AXI_DATA_WIDTH_P-1 : 0] cr_led_0;
-  logic [AXI_DATA_WIDTH_P-1 : 0] cmd_irq_clear;
+  logic                          cmd_clear_irq_0;
 
   // -------------------------------------------------------------------------
   // AXI4 Write Arbiter
@@ -240,8 +260,10 @@ module project_top #(
   logic                       cs_dac_valid;
   logic                       cs_dac_ready;
 
-  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_amplitude;
-  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude;
   logic                       cmd_cir_clear_max;
 
   // -------------------------------------------------------------------------
@@ -277,24 +299,13 @@ module project_top #(
   // Oscillator
   // -------------------------------------------------------------------------
 
-
-  localparam int SYS_CLK_FREQUENCY_C  = 125000000;
-  localparam int PRIME_FREQUENCY_C    = 1000000;
-  localparam int WAVE_WIDTH_C         = 24;
-  localparam int DUTY_CYCLE_DIVIDER_C = 1000;
-  localparam int N_BITS_C             = 32;
-  localparam int Q_BITS_C             = 11;
-  localparam int AXI_DATA_WIDTH_C     = 32;
-  localparam int AXI_ID_WIDTH_C       = 32;
-  localparam int AXI_ID_C             = 32'hDEADBEA7;
-
   logic signed [WAVE_WIDTH_C-1 : 0] osc_waveform;
   logic                     [1 : 0] cr_osc0_waveform_select;
   logic            [N_BITS_C-1 : 0] cr_osc0_frequency;
   logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
 
 
-  assign mix_channel_data[2] = osc_waveform <<< 20;
+  assign mix_channel_data[2] = osc_waveform;
 
   // -------------------------------------------------------------------------
   // Mixer Clip LED
@@ -332,16 +343,18 @@ module project_top #(
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : mixer_ingress_p0
     if (!rst_n) begin
-      mix_channel_data[0]    <= '0;
-      mix_channel_data[1]    <= '0;
-      mix_channel_valid      <= '0;
-      cr_mix_channel_pan[0]  <= '0;
-      cr_mix_channel_pan[1]  <= '1;
-      cr_mix_channel_pan[2]  <= '1;
-      cs_adc_ready           <= '1;
-      sr_cir_max_amplitude   <= '0;
-      sr_cir_min_amplitude   <= {1'b1, {AUDIO_WIDTH_C{1'b0}}};
-      led_2                  <= '0;
+      mix_channel_data[0]      <= '0;
+      mix_channel_data[1]      <= '0;
+      mix_channel_valid        <= '0;
+      cr_mix_channel_pan[0]    <= '0;
+      cr_mix_channel_pan[1]    <= '1;
+      cr_mix_channel_pan[2]    <= '1;
+      cs_adc_ready             <= '1;
+      sr_cir_min_adc_amplitude <= '0;
+      sr_cir_max_adc_amplitude <= '0;
+      sr_cir_min_dac_amplitude <= '0;
+      sr_cir_max_dac_amplitude <= '0;
+      led_2                    <= '0;
     end
     else begin
 
@@ -358,15 +371,29 @@ module project_top #(
 
       if (cmd_cir_clear_max) begin
         led_2 <= ~led_2;
-        sr_cir_max_amplitude <= '0;
+        sr_cir_min_adc_amplitude <= '0;
+        sr_cir_max_adc_amplitude <= '0;
+        sr_cir_min_dac_amplitude <= '0;
+        sr_cir_max_dac_amplitude <= '0;
       end
       else if (cs_adc_valid) begin
-        if ($signed(cs_adc_data) > $signed(sr_cir_max_amplitude)) begin
-          sr_cir_max_amplitude <= cs_adc_data;
+
+        if ($signed(cs_adc_data) < $signed(sr_cir_min_adc_amplitude)) begin
+          sr_cir_min_adc_amplitude <= cs_adc_data;
         end
-        if ($signed(cs_adc_data) < $signed(sr_cir_min_amplitude)) begin
-          sr_cir_min_amplitude <= cs_adc_data;
+
+        if ($signed(cs_adc_data) > $signed(sr_cir_max_adc_amplitude)) begin
+          sr_cir_max_adc_amplitude <= cs_adc_data;
         end
+
+        if ($signed(cs_adc_data) < $signed(sr_cir_min_dac_amplitude)) begin
+          sr_cir_min_dac_amplitude <= cs_adc_data;
+        end
+
+        if ($signed(cs_adc_data) > $signed(sr_cir_max_dac_amplitude)) begin
+          sr_cir_max_dac_amplitude <= cs_adc_data;
+        end
+
       end
 
 
@@ -387,12 +414,12 @@ module project_top #(
   always_ff @(posedge clk or negedge rst_n) begin : mixer_egress_p0
     if (!rst_n) begin
 
-      mix_egr_state      <= MIX_WAIT_VALID;
-      mix_out_ready      <= '1;
-      mix_out_right_r0   <= '0;
-      cs_dac_data        <= '0;
-      cs_dac_last        <= '0;
-      cs_dac_valid       <= '0;
+      mix_egr_state    <= MIX_WAIT_VALID;
+      mix_out_ready    <= '1;
+      mix_out_right_r0 <= '0;
+      cs_dac_data      <= '0;
+      cs_dac_last      <= '0;
+      cs_dac_valid     <= '0;
     end
     else begin
 
@@ -434,24 +461,6 @@ module project_top #(
 
 
   // -------------------------------------------------------------------------
-  // IRQ 1
-  // -------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
-    if (!rst_n) begin
-      irq_1 <= '0;
-      led_0 <= '0;
-    end
-    else begin
-      irq_1 <= '0;
-      if (btn_0_tgl) begin
-        led_0 <= ~led_0;
-        irq_1 <= '1;
-      end
-    end
-  end
-
-
-  // -------------------------------------------------------------------------
   // IRQ 0
   // -------------------------------------------------------------------------
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
@@ -466,11 +475,11 @@ module project_top #(
 
       irq_0 <= '0;
 
-      if (cmd_irq_clear) begin
+      /*if (cmd_clear_irq_0) begin
         irq_0_counter <= '0;
         irq_0         <= '0;
       end
-      else if (irq_0_counter == 125000000-1) begin
+      else*/ if (irq_0_counter == 125000000/10-1) begin
         irq_0         <= '1;
         irq_0_counter <= '0;
       end
@@ -481,6 +490,52 @@ module project_top #(
     end
   end
 
+
+  // -------------------------------------------------------------------------
+  // IRQ 1
+  // -------------------------------------------------------------------------
+  always_ff @(posedge clk or negedge rst_n) begin : interrupt_p1
+
+    if (!rst_n) begin
+
+      irq_1         <= '0;
+      irq_1_counter <= '0;
+
+    end
+    else begin
+
+      irq_1 <= '0;
+
+      /*if (cmd_clear_irq_0) begin
+        irq_1_counter <= '0;
+        irq_1         <= '0;
+      end
+      else*/ if (irq_1_counter == SAMPLING_IRQ_COUNTER_C-1) begin
+        irq_1         <= '1;
+        irq_1_counter <= '0;
+      end
+      else begin
+        irq_1_counter <= irq_1_counter + 1;
+      end
+
+    end
+  end
+
+  /*
+  always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
+    if (!rst_n) begin
+      irq_1 <= '0;
+      led_0 <= '0;
+    end
+    else begin
+      irq_1 <= '0;
+      if (btn_0_tgl) begin
+        led_0 <= ~led_0;
+        irq_1 <= '1;
+      end
+    end
+  end
+  */
 
   // -------------------------------------------------------------------------
   // Clock 'clk_sys' (125MHz) with LED process
@@ -737,53 +792,55 @@ module project_top #(
   // AXI4 Slave with PL registers
   // -------------------------------------------------------------------------
   dafx_axi_slave #(
-    .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P        ),
-    .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P        ),
-    .AUDIO_WIDTH_P            ( AUDIO_WIDTH_C           ),
-    .GAIN_WIDTH_P             ( GAIN_WIDTH_C            ),
-    .N_BITS_P                 ( N_BITS_C                )
+    .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P          ),
+    .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P          ),
+    .AUDIO_WIDTH_P            ( AUDIO_WIDTH_C             ),
+    .GAIN_WIDTH_P             ( GAIN_WIDTH_C              ),
+    .N_BITS_P                 ( N_BITS_C                  )
   ) dafx_axi_slave_i0 (
 
-    .clk                      ( clk                     ), // input
-    .rst_n                    ( rst_n                   ), // input
+    .clk                      ( clk                       ), // input
+    .rst_n                    ( rst_n                     ), // input
 
-    .awaddr                   ( cfg_awaddr              ), // input
-    .awvalid                  ( cfg_awvalid             ), // input
-    .awready                  ( cfg_awready             ), // output
+    .awaddr                   ( cfg_awaddr                ), // input
+    .awvalid                  ( cfg_awvalid               ), // input
+    .awready                  ( cfg_awready               ), // output
 
-    .wdata                    ( cfg_wdata               ), // input
-    .wstrb                    ( cfg_wstrb               ), // input
-    .wvalid                   ( cfg_wvalid              ), // input
-    .wready                   ( cfg_wready              ), // output
+    .wdata                    ( cfg_wdata                 ), // input
+    .wstrb                    ( cfg_wstrb                 ), // input
+    .wvalid                   ( cfg_wvalid                ), // input
+    .wready                   ( cfg_wready                ), // output
 
-    .bresp                    ( cfg_bresp               ), // output
-    .bvalid                   ( cfg_bvalid              ), // output
-    .bready                   ( cfg_bready              ), // input
+    .bresp                    ( cfg_bresp                 ), // output
+    .bvalid                   ( cfg_bvalid                ), // output
+    .bready                   ( cfg_bready                ), // input
 
-    .araddr                   ( cfg_araddr              ), // input
-    .arvalid                  ( cfg_arvalid             ), // input
-    .arready                  ( cfg_arready             ), // output
+    .araddr                   ( cfg_araddr                ), // input
+    .arvalid                  ( cfg_arvalid               ), // input
+    .arready                  ( cfg_arready               ), // output
 
-    .rdata                    ( cfg_rdata               ), // output
-    .rresp                    ( cfg_rresp               ), // output
-    .rvalid                   ( cfg_rvalid              ), // output
-    .rready                   ( cfg_rready              ), // input
+    .rdata                    ( cfg_rdata                 ), // output
+    .rresp                    ( cfg_rresp                 ), // output
+    .rvalid                   ( cfg_rvalid                ), // output
+    .rready                   ( cfg_rready                ), // input
 
-    .sr_hardware_version      ( SR_HARDWARE_VERSION_C   ), // input
-    .cr_mix_output_gain       ( cr_mix_output_gain      ), // output
-    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0   ), // output
-    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1   ), // output
-    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2   ), // output
-    .cr_osc0_waveform_select  ( cr_osc0_waveform_select ), // output
-    .cr_osc0_frequency        ( cr_osc0_frequency       ), // output
-    .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle      ), // output
-    .sr_cir_min_adc_amplitude ( sr_cir_max_amplitude    ), // input
-    .sr_cir_max_adc_amplitude ( sr_cir_min_amplitude    ), // input
-    .sr_cir_min_dac_amplitude ( '0                      ), // input
-    .sr_cir_max_dac_amplitude ( '0                      ), // input
-    .cmd_clear_adc_amplitude  ( cmd_cir_clear_max       ), // output
-    .cmd_clear_irq_0          ( cmd_irq_clear           ), // output
-    .cmd_clear_irq_1          (                         )  // output
+    .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
+    .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
+    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output
+    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1     ), // output
+    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2     ), // output
+    .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
+    .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
+    .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
+    .sr_cir_min_adc_amplitude ( -sr_cir_min_adc_amplitude ), // input
+    .sr_cir_max_adc_amplitude ( sr_cir_max_adc_amplitude  ), // input
+    .sr_cir_min_dac_amplitude ( -sr_cir_min_dac_amplitude ), // input
+    .sr_cir_max_dac_amplitude ( sr_cir_max_dac_amplitude  ), // input
+    .cmd_clear_adc_amplitude  ( cmd_cir_clear_max         ), // output
+    .cmd_clear_irq_0          ( cmd_clear_irq_0           ), // output
+    .cmd_clear_irq_1          (                           ), // output
+    .sr_mix_out_left          ( mix_out_left              ), // input
+    .sr_mix_out_right         ( mix_out_right             )  // input
   );
 
 
@@ -791,22 +848,22 @@ module project_top #(
   // Oscillator
   // -------------------------------------------------------------------------
   oscillator_system #(
-    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C     ),
-    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C       ),
-    .WAVE_WIDTH_P         ( WAVE_WIDTH_C            ),
-    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C    ),
-    .N_BITS_P             ( N_BITS_C                ),
-    .Q_BITS_P             ( Q_BITS_C                ),
-    .AXI_DATA_WIDTH_P     ( AXI_DATA_WIDTH_C        ),
-    .AXI_ID_WIDTH_P       ( AXI_ID_WIDTH_C          ),
-    .AXI_ID_P             ( AXI_ID_C                )
+    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C           ),
+    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C             ),
+    .WAVE_WIDTH_P         ( WAVE_WIDTH_C                  ),
+    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C          ),
+    .N_BITS_P             ( N_BITS_C                      ),
+    .Q_BITS_P             ( Q_BITS_C                      ),
+    .AXI_DATA_WIDTH_P     ( AXI_DATA_WIDTH_C              ),
+    .AXI_ID_WIDTH_P       ( AXI_ID_WIDTH_C                ),
+    .AXI_ID_P             ( AXI_ID_C                      )
   ) oscillator_system_i0 (
-    .clk                  ( clk                     ), // input
-    .rst_n                ( rst_n                   ), // input
-    .waveform             ( osc_waveform            ), // output
-    .cr_waveform_select   ( cr_osc0_waveform_select ), // input
+    .clk                  ( clk                           ), // input
+    .rst_n                ( rst_n                         ), // input
+    .waveform             ( osc_waveform                  ), // output
+    .cr_waveform_select   ( cr_osc0_waveform_select       ), // input
     .cr_frequency         ( cr_osc0_frequency << Q_BITS_C ), // input
-    .cr_duty_cycle        ( cr_osc0_duty_cycle      )  // input
+    .cr_duty_cycle        ( cr_osc0_duty_cycle            )  // input
   );
 
   // -------------------------------------------------------------------------

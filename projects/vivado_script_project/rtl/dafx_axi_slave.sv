@@ -81,7 +81,9 @@ module dafx_axi_slave #(
     input  wire     [AUDIO_WIDTH_P-1 : 0] sr_cir_max_dac_amplitude,
     output logic                          cmd_clear_adc_amplitude,
     output logic                          cmd_clear_irq_0,
-    output logic                          cmd_clear_irq_1
+    output logic                          cmd_clear_irq_1,
+    input  wire     [AUDIO_WIDTH_P-1 : 0] sr_mix_out_left,
+    input  wire     [AUDIO_WIDTH_P-1 : 0] sr_mix_out_right
   );
 
   // ---------------------------------------------------------------------------
@@ -321,51 +323,59 @@ module dafx_axi_slave #(
     case (araddr_d0)
 
       DAFX_HARDWARE_VERSION_ADDR: begin
-        rdata_d0[AXI_DATA_WIDTH_P-1 : 0] <= sr_hardware_version;
+        rdata_d0[AXI_DATA_WIDTH_P-1 : 0] = sr_hardware_version;
       end
 
       DAFX_MIXER_OUTPUT_GAIN_ADDR: begin
-        rdata_d0[GAIN_WIDTH_P-1 : 0] <= cr_mix_output_gain;
+        rdata_d0[GAIN_WIDTH_P-1 : 0] = cr_mix_output_gain;
       end
 
       DAFX_MIXER_CHANNEL_GAIN_0_ADDR: begin
-        rdata_d0[GAIN_WIDTH_P-1 : 0] <= cr_mix_channel_gain_0;
+        rdata_d0[GAIN_WIDTH_P-1 : 0] = cr_mix_channel_gain_0;
       end
 
       DAFX_MIXER_CHANNEL_GAIN_1_ADDR: begin
-        rdata_d0[GAIN_WIDTH_P-1 : 0] <= cr_mix_channel_gain_1;
+        rdata_d0[GAIN_WIDTH_P-1 : 0] = cr_mix_channel_gain_1;
       end
 
       DAFX_MIXER_CHANNEL_GAIN_2_ADDR: begin
-        rdata_d0[GAIN_WIDTH_P-1 : 0] <= cr_mix_channel_gain_2;
+        rdata_d0[GAIN_WIDTH_P-1 : 0] = cr_mix_channel_gain_2;
       end
 
       DAFX_OSC0_WAVEFORM_SELECT_ADDR: begin
-        rdata_d0[1 : 0] <= cr_osc0_waveform_select;
+        rdata_d0[1 : 0] = cr_osc0_waveform_select;
       end
 
       DAFX_OSC0_FREQUENCY_ADDR: begin
-        rdata_d0[N_BITS_P-1 : 0] <= cr_osc0_frequency;
+        rdata_d0[N_BITS_P-1 : 0] = cr_osc0_frequency;
       end
 
       DAFX_OSC0_DUTY_CYCLE_ADDR: begin
-        rdata_d0[N_BITS_P-1 : 0] <= cr_osc0_duty_cycle;
+        rdata_d0[N_BITS_P-1 : 0] = cr_osc0_duty_cycle;
       end
 
       DAFX_CIR_MIN_ADC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_min_adc_amplitude;
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_min_adc_amplitude;
       end
 
       DAFX_CIR_MAX_ADC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_max_adc_amplitude;
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_max_adc_amplitude;
       end
 
       DAFX_CIR_MIN_DAC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_min_dac_amplitude;
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_min_dac_amplitude;
       end
 
       DAFX_CIR_MAX_DAC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_P-1 : 0] <= sr_cir_max_dac_amplitude;
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_cir_max_dac_amplitude;
+      end
+
+      DAFX_MIX_OUT_LEFT_ADDR: begin
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_mix_out_left;
+      end
+
+      DAFX_MIX_OUT_RIGHT_ADDR: begin
+        rdata_d0[AUDIO_WIDTH_P-1 : 0] = sr_mix_out_right;
       end
 
 

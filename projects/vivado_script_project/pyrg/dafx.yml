@@ -179,3 +179,25 @@ dafx:
           lsb_pos:     0,
           reset_value: 0x0
         }
+
+    - name:   mix_out_left
+      desc:   Current left value forwarded to the DAC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_mix_out_left,
+          description: Current left value forwarded to the DAC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }
+
+    - name:   mix_out_right
+      desc:   Current right value forwarded to the DAC
+      access: RO
+      bit_fields:
+        - field: {
+          name:        sr_mix_out_right,
+          description: Current right value forwarded to the DAC,
+          size:        AUDIO_WIDTH_P,
+          lsb_pos:     0
+        }

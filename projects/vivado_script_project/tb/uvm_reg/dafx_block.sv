@@ -37,6 +37,8 @@ class dafx_block extends uvm_reg_block;
   rand clear_adc_amplitude_reg clear_adc_amplitude;
   rand clear_irq_0_reg clear_irq_0;
   rand clear_irq_1_reg clear_irq_1;
+  rand mix_out_left_reg mix_out_left;
+  rand mix_out_right_reg mix_out_right;
 
 
   function new (string name = "dafx_block");
@@ -106,6 +108,14 @@ class dafx_block extends uvm_reg_block;
     clear_irq_1.build();
     clear_irq_1.configure(this);
 
+    mix_out_left = mix_out_left_reg::type_id::create("mix_out_left");
+    mix_out_left.build();
+    mix_out_left.configure(this);
+
+    mix_out_right = mix_out_right_reg::type_id::create("mix_out_right");
+    mix_out_right.build();
+    mix_out_right.configure(this);
+
 
 
     default_map = create_map("dafx_map", 'h00000000, 32, UVM_LITTLE_ENDIAN);
@@ -125,6 +135,8 @@ class dafx_block extends uvm_reg_block;
     default_map.add_reg(clear_adc_amplitude, 48, "WO");
     default_map.add_reg(clear_irq_0, 52, "WO");
     default_map.add_reg(clear_irq_1, 56, "WO");
+    default_map.add_reg(mix_out_left, 60, "RO");
+    default_map.add_reg(mix_out_right, 64, "RO");
 
 
     lock_model();
