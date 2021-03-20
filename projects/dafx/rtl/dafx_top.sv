@@ -67,13 +67,13 @@ module dafx_top #(
 
     // Write Address Channel
     input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
-    input  wire                           [2 : 0] cfg_awprot,
     input  wire                                   cfg_awvalid,
     output logic                                  cfg_awready,
 
     // Write Data Channel
     input  wire          [CFG_DATA_WIDTH_P-1 : 0] cfg_wdata,
     input  wire      [(CFG_DATA_WIDTH_P/8)-1 : 0] cfg_wstrb,
+    input  wire                                   cfg_wlast,
     input  wire                                   cfg_wvalid,
     output logic                                  cfg_wready,
 
@@ -84,13 +84,14 @@ module dafx_top #(
 
     // Read Address Channel
     input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_araddr,
-    input  wire                           [2 : 0] cfg_arprot,
+    input  wire                           [7 : 0] cfg_arlen,
     input  wire                                   cfg_arvalid,
     output logic                                  cfg_arready,
 
     // Read Data Channel
     output logic         [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
     output logic                          [1 : 0] cfg_rresp,
+    output logic                                  cfg_rlast,
     output logic                                  cfg_rvalid,
     input  wire                                   cfg_rready,
 
@@ -99,8 +100,8 @@ module dafx_top #(
     // ---------------------------------------------------------------------------
 
     // Write Address Channel
-    output logic           [MC_ID_WIDTH_P-1 : 0] mc_awid,
-    output logic         [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
+    output logic            [MC_ID_WIDTH_P-1 : 0] mc_awid,
+    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
     output logic                          [7 : 0] mc_awlen,
     output logic                          [2 : 0] mc_awsize,
     output logic                          [1 : 0] mc_awburst,
@@ -110,21 +111,21 @@ module dafx_top #(
     input  wire                                   mc_awready,
 
     // Write Data Channel
-    output logic         [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
-    output logic     [(MC_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
+    output logic          [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
+    output logic      [(MC_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
     output logic                                  mc_wlast,
     output logic                                  mc_wvalid,
     input  wire                                   mc_wready,
 
     // Write Response Channel
-    input  wire            [MC_ID_WIDTH_P-1 : 0] mc_bid,
+    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_bid,
     input  wire                           [1 : 0] mc_bresp,
     input  wire                                   mc_bvalid,
     output logic                                  mc_bready,
 
     // Read Address Channel
-    output logic           [MC_ID_WIDTH_P-1 : 0] mc_arid,
-    output logic         [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
+    output logic            [MC_ID_WIDTH_P-1 : 0] mc_arid,
+    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
     output logic                          [7 : 0] mc_arlen,
     output logic                          [2 : 0] mc_arsize,
     output logic                          [1 : 0] mc_arburst,
@@ -134,9 +135,9 @@ module dafx_top #(
     input  wire                                   mc_arready,
 
     // Read Data Channel
-    input  wire            [MC_ID_WIDTH_P-1 : 0] mc_rid,
+    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_rid,
     input  wire                           [1 : 0] mc_rresp,
-    input  wire          [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
+    input  wire           [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
     input  wire                                   mc_rlast,
     input  wire                                   mc_rvalid,
     output logic                                  mc_rready,
@@ -152,91 +153,97 @@ module dafx_top #(
     input  wire                                   cs_rx_sdin
   );
 
+  logic clk_mclk;
+  logic rst_mclk_n;
+
   dafx_core #(
-    .MC_ID_WIDTH_P    ( 6                  )
-    .MC_ADDR_WIDTH_P  ( 32                 )
-    .MC_DATA_WIDTH_P  ( 128                )
-    .CFG_ADDR_WIDTH_P ( 16                 )
-    .CFG_DATA_WIDTH_P ( 64                 )
-    .AXI_ID_WIDTH_P   ( 32                 )
-    .AXI_ADDR_WIDTH_P ( 7                  )
-    .AXI_DATA_WIDTH_P ( 32                 )
+    .MC_ID_WIDTH_P    ( 6                  ),
+    .MC_ADDR_WIDTH_P  ( 32                 ),
+    .MC_DATA_WIDTH_P  ( 128                ),
+    .CFG_ADDR_WIDTH_P ( 16                 ),
+    .CFG_DATA_WIDTH_P ( 64                 ),
+    .AXI_ID_WIDTH_P   ( 32                 ),
+    .AXI_ADDR_WIDTH_P ( 7                  ),
+    .AXI_DATA_WIDTH_P ( 32                 ),
     .AXI_STRB_WIDTH_P ( AXI_DATA_WIDTH_P/8 )
   ) dafx_core_i0 (
-    .clk         ( clk         ), // input
-    .rst_n       ( rst_n       ), // input
-    .led_0       ( led_0       ), // output
-    .led_1       ( led_1       ), // output
-    .led_2       ( led_2       ), // output
-    .led_3       ( led_3       ), // output
-    .btn_0       ( btn_0       ), // input
-    .btn_1       ( btn_1       ), // input
-    .btn_2       ( btn_2       ), // input
-    .btn_3       ( btn_3       ), // input
-    .sw_0        ( sw_0        ), // input
-    .sw_1        ( sw_1        ), // input
-    .irq_0       ( irq_0       ), // output
-    .irq_1       ( irq_1       ), // output
-    .cfg_awaddr  ( cfg_awaddr  ), // input
-    .cfg_awprot  ( cfg_awprot  ), // input
-    .cfg_awvalid ( cfg_awvalid ), // input
-    .cfg_awready ( cfg_awready ), // output
-    .cfg_wdata   ( cfg_wdata   ), // input
-    .cfg_wstrb   ( cfg_wstrb   ), // input
-    .cfg_wvalid  ( cfg_wvalid  ), // input
-    .cfg_wready  ( cfg_wready  ), // output
-    .cfg_bresp   ( cfg_bresp   ), // output
-    .cfg_bvalid  ( cfg_bvalid  ), // output
-    .cfg_bready  ( cfg_bready  ), // input
-    .cfg_araddr  ( cfg_araddr  ), // input
-    .cfg_arprot  ( cfg_arprot  ), // input
-    .cfg_arvalid ( cfg_arvalid ), // input
-    .cfg_arready ( cfg_arready ), // output
-    .cfg_rdata   ( cfg_rdata   ), // output
-    .cfg_rresp   ( cfg_rresp   ), // output
-    .cfg_rvalid  ( cfg_rvalid  ), // output
-    .cfg_rready  ( cfg_rready  ), // input
-    .mc_awid     ( mc_awid     ), // output
-    .mc_awaddr   ( mc_awaddr   ), // output
-    .mc_awlen    ( mc_awlen    ), // output
-    .mc_awsize   ( mc_awsize   ), // output
-    .mc_awburst  ( mc_awburst  ), // output
-    .mc_awlock   ( mc_awlock   ), // output
-    .mc_awqos    ( mc_awqos    ), // output
-    .mc_awvalid  ( mc_awvalid  ), // output
-    .mc_awready  ( mc_awready  ), // input
-    .mc_wdata    ( mc_wdata    ), // output
-    .mc_wstrb    ( mc_wstrb    ), // output
-    .mc_wlast    ( mc_wlast    ), // output
-    .mc_wvalid   ( mc_wvalid   ), // output
-    .mc_wready   ( mc_wready   ), // input
-    .mc_bid      ( mc_bid      ), // input
-    .mc_bresp    ( mc_bresp    ), // input
-    .mc_bvalid   ( mc_bvalid   ), // input
-    .mc_bready   ( mc_bready   ), // output
-    .mc_arid     ( mc_arid     ), // output
-    .mc_araddr   ( mc_araddr   ), // output
-    .mc_arlen    ( mc_arlen    ), // output
-    .mc_arsize   ( mc_arsize   ), // output
-    .mc_arburst  ( mc_arburst  ), // output
-    .mc_arlock   ( mc_arlock   ), // output
-    .mc_arqos    ( mc_arqos    ), // output
-    .mc_arvalid  ( mc_arvalid  ), // output
-    .mc_arready  ( mc_arready  ), // input
-    .mc_rid      ( mc_rid      ), // input
-    .mc_rresp    ( mc_rresp    ), // input
-    .mc_rdata    ( mc_rdata    ), // input
-    .mc_rlast    ( mc_rlast    ), // input
-    .mc_rvalid   ( mc_rvalid   ), // input
-    .mc_rready   ( mc_rready   ), // output
-    .cs_tx_mclk  ( cs_tx_mclk  ), // output
-    .cs_tx_lrck  ( cs_tx_lrck  ), // output
-    .cs_tx_sclk  ( cs_tx_sclk  ), // output
-    .cs_tx_sdout ( cs_tx_sdout ), // output
-    .cs_rx_mclk  ( cs_rx_mclk  ), // output
-    .cs_rx_lrck  ( cs_rx_lrck  ), // output
-    .cs_rx_sclk  ( cs_rx_sclk  ), // output
-    .cs_rx_sdin  ( cs_rx_sdin  )  // input
+    .clk              ( clk                ), // input
+    .rst_n            ( rst_n              ), // input
+    .clk_mclk         ( clk_mclk           ), // input
+    .rst_mclk_n       ( rst_mclk_n         ), // input
+    .led_0            ( led_0              ), // output
+    .led_1            ( led_1              ), // output
+    .led_2            ( led_2              ), // output
+    .led_3            ( led_3              ), // output
+    .btn_0            ( btn_0              ), // input
+    .btn_1            ( btn_1              ), // input
+    .btn_2            ( btn_2              ), // input
+    .btn_3            ( btn_3              ), // input
+    .sw_0             ( sw_0               ), // input
+    .sw_1             ( sw_1               ), // input
+    .irq_0            ( irq_0              ), // output
+    .irq_1            ( irq_1              ), // output
+    .cfg_awaddr       ( cfg_awaddr         ), // input
+    .cfg_awvalid      ( cfg_awvalid        ), // input
+    .cfg_awready      ( cfg_awready        ), // output
+    .cfg_wdata        ( cfg_wdata          ), // input
+    .cfg_wstrb        ( cfg_wstrb          ), // input
+    .cfg_wlast        ( cfg_wlast          ), // input
+    .cfg_wvalid       ( cfg_wvalid         ), // input
+    .cfg_wready       ( cfg_wready         ), // output
+    .cfg_bresp        ( cfg_bresp          ), // output
+    .cfg_bvalid       ( cfg_bvalid         ), // output
+    .cfg_bready       ( cfg_bready         ), // input
+    .cfg_araddr       ( cfg_araddr         ), // input
+    .cfg_arlen        ( cfg_arlen          ), // input
+    .cfg_arvalid      ( cfg_arvalid        ), // input
+    .cfg_arready      ( cfg_arready        ), // output
+    .cfg_rdata        ( cfg_rdata          ), // output
+    .cfg_rresp        ( cfg_rresp          ), // output
+    .cfg_rlast        ( cfg_rlast          ), // output
+    .cfg_rvalid       ( cfg_rvalid         ), // output
+    .cfg_rready       ( cfg_rready         ), // input
+    .mc_awid          ( mc_awid            ), // output
+    .mc_awaddr        ( mc_awaddr          ), // output
+    .mc_awlen         ( mc_awlen           ), // output
+    .mc_awsize        ( mc_awsize          ), // output
+    .mc_awburst       ( mc_awburst         ), // output
+    .mc_awlock        ( mc_awlock          ), // output
+    .mc_awqos         ( mc_awqos           ), // output
+    .mc_awvalid       ( mc_awvalid         ), // output
+    .mc_awready       ( mc_awready         ), // input
+    .mc_wdata         ( mc_wdata           ), // output
+    .mc_wstrb         ( mc_wstrb           ), // output
+    .mc_wlast         ( mc_wlast           ), // output
+    .mc_wvalid        ( mc_wvalid          ), // output
+    .mc_wready        ( mc_wready          ), // input
+    .mc_bid           ( mc_bid             ), // input
+    .mc_bresp         ( mc_bresp           ), // input
+    .mc_bvalid        ( mc_bvalid          ), // input
+    .mc_bready        ( mc_bready          ), // output
+    .mc_arid          ( mc_arid            ), // output
+    .mc_araddr        ( mc_araddr          ), // output
+    .mc_arlen         ( mc_arlen           ), // output
+    .mc_arsize        ( mc_arsize          ), // output
+    .mc_arburst       ( mc_arburst         ), // output
+    .mc_arlock        ( mc_arlock          ), // output
+    .mc_arqos         ( mc_arqos           ), // output
+    .mc_arvalid       ( mc_arvalid         ), // output
+    .mc_arready       ( mc_arready         ), // input
+    .mc_rid           ( mc_rid             ), // input
+    .mc_rresp         ( mc_rresp           ), // input
+    .mc_rdata         ( mc_rdata           ), // input
+    .mc_rlast         ( mc_rlast           ), // input
+    .mc_rvalid        ( mc_rvalid          ), // input
+    .mc_rready        ( mc_rready          ), // output
+    .cs_tx_mclk       ( cs_tx_mclk         ), // output
+    .cs_tx_lrck       ( cs_tx_lrck         ), // output
+    .cs_tx_sclk       ( cs_tx_sclk         ), // output
+    .cs_tx_sdout      ( cs_tx_sdout        ), // output
+    .cs_rx_mclk       ( cs_rx_mclk         ), // output
+    .cs_rx_lrck       ( cs_rx_lrck         ), // output
+    .cs_rx_sclk       ( cs_rx_sclk         ), // output
+    .cs_rx_sdin       ( cs_rx_sdin         )  // input
   );
 
   // -------------------------------------------------------------------------

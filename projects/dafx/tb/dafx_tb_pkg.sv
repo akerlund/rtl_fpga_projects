@@ -25,6 +25,7 @@ package dafx_tb_pkg;
   `include "uvm_macros.svh"
   import uvm_pkg::*;
 
+  import bool_pkg::*;
   import dafx_pkg::*;
 
   import clk_rst_types_pkg::*;

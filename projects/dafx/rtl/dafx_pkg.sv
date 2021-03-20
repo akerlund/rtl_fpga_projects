@@ -52,12 +52,4 @@ package dafx_pkg;
   localparam int Q_BITS_C             = 11;
   localparam int AXI_ID_C             = 32'hDEADBEA7;
 
-  `ifndef BOOL_T
-  `define BOOL_T
-  typedef enum bit {
-    FALSE,
-    TRUE
-  } bool_t;
-  `endif
-
 endpackage

@@ -26,8 +26,8 @@ module cs5343_top (
     input  wire           clk,
     input  wire           rst_n,
 
-    output logic          clk_mclk,
-    output logic          rst_mclk_n,
+    input  wire           clk_mclk,
+    input  wire           rst_mclk_n,
 
     output logic          cs_rx_mclk,
     output logic          cs_rx_lrck,
@@ -60,16 +60,6 @@ module cs5343_top (
   logic          mclk_adc_ready;
   logic          mclk_adc_last;
 
-
-  // -------------------------------------------------------------------------
-  // PLL for the Cirrus ICs
-  // -------------------------------------------------------------------------
-  car_cs5343 car_cs5343_i0 (
-    .clk        ( clk        ), // input
-    .rst_n      ( rst_n      ), // input
-    .clk_mclk   ( clk_mclk   ), // output
-    .rst_mclk_n ( rst_mclk_n )  // output
-  );
 
   // -------------------------------------------------------------------------
   // Cirrus CS5343 ADC, CS4344 DAC

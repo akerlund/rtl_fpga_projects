@@ -70,13 +70,13 @@ module dafx_core #(
 
     // Write Address Channel
     input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
-    input  wire                           [2 : 0] cfg_awprot,
     input  wire                                   cfg_awvalid,
     output logic                                  cfg_awready,
 
     // Write Data Channel
     input  wire          [CFG_DATA_WIDTH_P-1 : 0] cfg_wdata,
     input  wire      [(CFG_DATA_WIDTH_P/8)-1 : 0] cfg_wstrb,
+    input  wire                                   cfg_wlast,
     input  wire                                   cfg_wvalid,
     output logic                                  cfg_wready,
 
@@ -87,13 +87,14 @@ module dafx_core #(
 
     // Read Address Channel
     input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_araddr,
-    input  wire                           [2 : 0] cfg_arprot,
+    input  wire                           [7 : 0] cfg_arlen,
     input  wire                                   cfg_arvalid,
     output logic                                  cfg_arready,
 
     // Read Data Channel
     output logic         [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
     output logic                          [1 : 0] cfg_rresp,
+    output logic                                  cfg_rlast,
     output logic                                  cfg_rvalid,
     input  wire                                   cfg_rready,
 
@@ -230,9 +231,9 @@ module dafx_core #(
   logic [0 : NR_OF_MASTERS_C-1]                          mst_wvalid;
   logic [0 : NR_OF_MASTERS_C-1]                          mst_wready;
 
-  // d
+
   // AXI4 Read Arbiter
-  // d
+
 
   // Read Address Channel
   logic [0 : NR_OF_MASTERS_C-1]   [MC_ID_WIDTH_P-1 : 0] mst_arid;
@@ -248,16 +249,10 @@ module dafx_core #(
   logic [0 : NR_OF_MASTERS_C-1]                          mst_rvalid;
   logic [0 : NR_OF_MASTERS_C-1]                          mst_rready;
 
-  // d
-  // Cirrus clock and reset
-  // d
 
-  logic clk_mclk;
-  logic rst_mclk_n;
 
-  // d
   // I2S2 PMOD
-  // d
+
 
   logic [AUDIO_WIDTH_C-1 : 0] cs_adc_data;
   logic                       cs_adc_ready;
@@ -275,9 +270,9 @@ module dafx_core #(
   logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude;
   logic                       cmd_cir_clear_max;
 
-  // d
+
   // Mixer
-  // d
+
 
   logic signed [NR_OF_CHANNELS_C-1 : 0] [AUDIO_WIDTH_C-1 : 0] mix_channel_data;
   logic                                                       mix_channel_valid;
@@ -304,9 +299,9 @@ module dafx_core #(
   assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2 << Q_BITS_C;
 
 
-  // d
+
   // Oscillator
-  // d
+
 
   logic signed [WAVE_WIDTH_C-1 : 0] osc_waveform;
   logic                     [1 : 0] cr_osc0_waveform_select;
@@ -316,9 +311,9 @@ module dafx_core #(
 
   assign mix_channel_data[2] = osc_waveform;
 
-  // d
+
   // Mixer Clip LED
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : mixer_clip_p0
     if (!rst_n) begin
       led_1         <= '0;
@@ -347,9 +342,9 @@ module dafx_core #(
   end
 
 
-  // d
+
   // Mixer Ingress
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : mixer_ingress_p0
     if (!rst_n) begin
       mix_channel_data[0]      <= '0;
@@ -417,9 +412,9 @@ module dafx_core #(
 
   mix_egr_state_t mix_egr_state;
 
-  // d
+
   // Mixer Egress
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : mixer_egress_p0
     if (!rst_n) begin
 
@@ -469,9 +464,9 @@ module dafx_core #(
   end
 
 
-  // d
+
   // IRQ 0
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
 
     if (!rst_n) begin
@@ -500,9 +495,9 @@ module dafx_core #(
   end
 
 
-  // d
+
   // IRQ 1
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p1
 
     if (!rst_n) begin
@@ -546,9 +541,9 @@ module dafx_core #(
   end
   */
 
-  // d
+
   // Clock 'clk_sys' (125MHz) with LED process
-  // d
+
   always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
 
     if (!rst_n) begin
@@ -570,9 +565,9 @@ module dafx_core #(
     end
   end
 
-  // d
+
   // Audio Mixer
-  // d
+
   mixer #(
     .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C                   ),
     .GAIN_WIDTH_P        ( GAIN_WIDTH_C                    ),
@@ -731,8 +726,8 @@ module dafx_core #(
     // Clock and reset
     .clk         ( clk          ), // input
     .rst_n       ( rst_n        ), // input
-    .clk_mclk    ( clk_mclk     ), // output
-    .rst_mclk_n  ( rst_mclk_n   ), // output
+    .clk_mclk    ( clk_mclk     ), // input
+    .rst_mclk_n  ( rst_mclk_n   ), // input
 
     // I/O Cirrus CS5343 (DAC)
     .cs_tx_mclk  ( cs_tx_mclk   ), // output
@@ -803,9 +798,9 @@ module dafx_core #(
   dafx_axi_slave #(
     .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P          ),
     .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P          ),
-    .AUDIO_WIDTH_P            ( AUDIO_WIDTH_C             ),
-    .GAIN_WIDTH_P             ( GAIN_WIDTH_C              ),
-    .N_BITS_P                 ( N_BITS_C                  )
+    .AUDIO_WIDTH_C            ( AUDIO_WIDTH_C             ),
+    .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
+    .N_BITS_C                 ( N_BITS_C                  )
   ) dafx_axi_slave_i0 (
 
     .clk                      ( clk                       ), // input

@@ -8,9 +8,9 @@ uvm_top="dafx_tb_top"
 # Source submodules
 # ------------------------------------------------------------------------------
 
-git_root="$(git rev-parse --show-toplevel)/submodules/rtl_common_design" # The submodules use this variable
-git_sub_root="$(git rev-parse --show-toplevel)"                          # We use this, because the former name is now taken
+git_sub_root="$(git rev-parse --show-toplevel)"
 
+git_root="$(git rev-parse --show-toplevel)/submodules/rtl_common_design"
 source $git_sub_root/submodules/rtl_common_design/modules/synchronizers/io/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/synchronizers/reset/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/synchronizers/cdc_bit_sync/rtl/rtl_files.lst
@@ -30,13 +30,15 @@ source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/delay_e
 source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/frequency_enable/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/oscillator/rtl/rtl_files.lst
 
-git_root="$(git rev-parse --show-toplevel)/submodules/VIP" # The submodules use this variable
-git_sub_root="$(git rev-parse --show-toplevel)"            # We use this, because the former name is now taken
+git_root="$(git rev-parse --show-toplevel)/submodules/VIP"
 source $git_sub_root/submodules/VIP/bool/files.lst
 source $git_sub_root/submodules/VIP/vip_axi4_agent/files.lst
 source $git_sub_root/submodules/VIP/vip_axi4s_agent/files.lst
 source $git_sub_root/submodules/VIP/vip_clk_rst_agent/files.lst
 source $git_sub_root/submodules/VIP/report_server/files.lst
+
+git_root="$(git rev-parse --show-toplevel)/submodules/PYRG"
+source $git_sub_root/submodules/PYRG/rtl/files.lst
 
 # Printing out the files
 eval "arr=($rtl_files)"

@@ -13,7 +13,7 @@ dafx:
         - field: {
           name:        sr_hardware_version,
           description: Hardware version,
-          size:        AXI_DATA_WIDTH_C,
+          size:        64,
           lsb_pos:     0
         }
 

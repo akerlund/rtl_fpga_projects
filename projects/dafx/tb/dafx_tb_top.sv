@@ -32,11 +32,11 @@ module dafx_tb_top;
   vip_axi4_if  #(VIP_REG_CFG_C) reg_vif(clk_rst_vif.clk, clk_rst_vif.rst_n);
   vip_axi4s_if #(VIP_CIR_CFG_C) cir_vif(clk_rst_vif.clk, clk_rst_vif.rst_n);
 
-  axi_cfg_if  #(
-    .AXI4_ID_WIDTH_P   ( VIP_REG_CFG_C.VIP_AXI4_ID_WIDTH_C   ),
-    .AXI4_ADDR_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_ADDR_WIDTH_C ),
-    .AXI4_DATA_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_DATA_WIDTH_C ),
-    .AXI4_STRB_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_STRB_WIDTH_C )
+  axi4_reg_if  #(
+    .AXI4_ID_WIDTH_P   ( VIP_REG_CFG_C.VIP_AXI4_ID_WIDTH_P   ),
+    .AXI4_ADDR_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_ADDR_WIDTH_P ),
+    .AXI4_DATA_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_DATA_WIDTH_P ),
+    .AXI4_STRB_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_STRB_WIDTH_P )
   ) cfg_vif (clk_rst_vif.clk, clk_rst_vif.rst_n);
 
   //----------------------------------------------------------------------------
@@ -118,13 +118,13 @@ module dafx_tb_top;
 
     // Write Address Channel
     .cfg_awaddr  ( cfg_vif.awaddr    ), // input
-    .cfg_awprot  ( cfg_vif.awprot    ), // input
     .cfg_awvalid ( cfg_vif.awvalid   ), // input
     .cfg_awready ( cfg_vif.awready   ), // output
 
     // Write Data Channel
     .cfg_wdata   ( cfg_vif.wdata     ), // input
     .cfg_wstrb   ( cfg_vif.wstrb     ), // input
+    .cfg_wlast   ( cfg_vif.wlast     ), // input
     .cfg_wvalid  ( cfg_vif.wvalid    ), // input
     .cfg_wready  ( cfg_vif.wready    ), // output
 
@@ -135,13 +135,14 @@ module dafx_tb_top;
 
     // Read Address Channel
     .cfg_araddr  ( cfg_vif.araddr    ), // input
-    .cfg_arprot  ( cfg_vif.arprot    ), // input
+    .cfg_arlen   ( cfg_vif.arlen     ), // input
     .cfg_arvalid ( cfg_vif.arvalid   ), // input
     .cfg_arready ( cfg_vif.arready   ), // output
 
     // Read Data Channel
     .cfg_rdata   ( cfg_vif.rdata     ), // output
     .cfg_rresp   ( cfg_vif.rresp     ), // output
+    .cfg_rlast   ( cfg_vif.rlast     ), // output
     .cfg_rvalid  ( cfg_vif.rvalid    ), // output
     .cfg_rready  ( cfg_vif.rready    ), // input
 

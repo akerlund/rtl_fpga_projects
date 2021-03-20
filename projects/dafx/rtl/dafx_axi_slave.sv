@@ -24,7 +24,6 @@ import dafx_address_pkg::*;
 module dafx_axi_slave #(
     parameter int AUDIO_WIDTH_C = -1,
     parameter int AXI_ADDR_WIDTH_P = -1,
-    parameter int AXI_DATA_WIDTH_C = -1,
     parameter int AXI_DATA_WIDTH_P = -1,
     parameter int GAIN_WIDTH_C = -1,
     parameter int N_BITS_C = -1
@@ -68,23 +67,23 @@ module dafx_axi_slave #(
     // ---------------------------------------------------------------------------
     // Register Ports
     // ---------------------------------------------------------------------------
-    input  wire  [AXI_DATA_WIDTH_C-1 : 0] sr_hardware_version,
-    output logic     [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
-    output logic     [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0,
-    output logic     [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_1,
-    output logic     [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_2,
-    output logic                  [1 : 0] cr_osc0_waveform_select,
-    output logic         [N_BITS_C-1 : 0] cr_osc0_frequency,
-    output logic         [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
-    output logic                          cmd_clear_adc_amplitude,
-    output logic                          cmd_clear_irq_0,
-    output logic                          cmd_clear_irq_1,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
-    input  wire     [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
+    input  wire               [63 : 0] sr_hardware_version,
+    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
+    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0,
+    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_1,
+    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_2,
+    output logic               [1 : 0] cr_osc0_waveform_select,
+    output logic      [N_BITS_C-1 : 0] cr_osc0_frequency,
+    output logic      [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
+    output logic                       cmd_clear_adc_amplitude,
+    output logic                       cmd_clear_irq_0,
+    output logic                       cmd_clear_irq_1,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
+    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
   );
 
   // ---------------------------------------------------------------------------
@@ -324,7 +323,7 @@ module dafx_axi_slave #(
     case (araddr_d0)
 
       DAFX_HARDWARE_VERSION_ADDR: begin
-        rdata_d0[AXI_DATA_WIDTH_C-1 : 0] = sr_hardware_version;
+        rdata_d0[63 : 0] = sr_hardware_version;
       end
 
       DAFX_MIXER_OUTPUT_GAIN_ADDR: begin

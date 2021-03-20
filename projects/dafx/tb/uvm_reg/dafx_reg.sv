@@ -42,7 +42,7 @@ class hardware_version_reg extends uvm_reg;
     sr_hardware_version = uvm_reg_field::type_id::create("sr_hardware_version");
     sr_hardware_version.configure(
       .parent(this),
-      .size(AXI_DATA_WIDTH_C),
+      .size(64),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -51,7 +51,7 @@ class hardware_version_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_hardware_version", 0, AXI_DATA_WIDTH_C);
+    add_hdl_path_slice("sr_hardware_version", 0, 64);
 
   endfunction
 
