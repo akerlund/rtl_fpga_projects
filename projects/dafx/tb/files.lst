@@ -1,0 +1,13 @@
+module_path=$git_root/projects/dafx
+
+uvm_dirs+="
+  +incdir+$module_path/tb/uvm_reg
+  +incdir+$module_path/tb/
+  +incdir+$module_path/tc/
+"
+
+uvm_files+="
+  $module_path/tb/dafx_tb_pkg.sv
+  $module_path/tc/dafx_tc_pkg.sv
+  $module_path/tb/dafx_tb_top.sv
+"

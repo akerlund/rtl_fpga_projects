@@ -42,7 +42,7 @@ class hardware_version_reg extends uvm_reg;
     sr_hardware_version = uvm_reg_field::type_id::create("sr_hardware_version");
     sr_hardware_version.configure(
       .parent(this),
-      .size(AXI_DATA_WIDTH_P),
+      .size(AXI_DATA_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -51,7 +51,7 @@ class hardware_version_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_hardware_version", 0, AXI_DATA_WIDTH_P);
+    add_hdl_path_slice("sr_hardware_version", 0, AXI_DATA_WIDTH_C);
 
   endfunction
 
@@ -81,7 +81,7 @@ class mixer_output_gain_reg extends uvm_reg;
     cr_mix_output_gain = uvm_reg_field::type_id::create("cr_mix_output_gain");
     cr_mix_output_gain.configure(
       .parent(this),
-      .size(GAIN_WIDTH_P),
+      .size(GAIN_WIDTH_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -90,7 +90,7 @@ class mixer_output_gain_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_mix_output_gain", 0, GAIN_WIDTH_P);
+    add_hdl_path_slice("cr_mix_output_gain", 0, GAIN_WIDTH_C);
 
   endfunction
 
@@ -120,7 +120,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
     cr_mix_channel_gain_0 = uvm_reg_field::type_id::create("cr_mix_channel_gain_0");
     cr_mix_channel_gain_0.configure(
       .parent(this),
-      .size(GAIN_WIDTH_P),
+      .size(GAIN_WIDTH_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -129,7 +129,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_mix_channel_gain_0", 0, GAIN_WIDTH_P);
+    add_hdl_path_slice("cr_mix_channel_gain_0", 0, GAIN_WIDTH_C);
 
   endfunction
 
@@ -159,7 +159,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
     cr_mix_channel_gain_1 = uvm_reg_field::type_id::create("cr_mix_channel_gain_1");
     cr_mix_channel_gain_1.configure(
       .parent(this),
-      .size(GAIN_WIDTH_P),
+      .size(GAIN_WIDTH_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -168,7 +168,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_mix_channel_gain_1", 0, GAIN_WIDTH_P);
+    add_hdl_path_slice("cr_mix_channel_gain_1", 0, GAIN_WIDTH_C);
 
   endfunction
 
@@ -198,7 +198,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
     cr_mix_channel_gain_2 = uvm_reg_field::type_id::create("cr_mix_channel_gain_2");
     cr_mix_channel_gain_2.configure(
       .parent(this),
-      .size(GAIN_WIDTH_P),
+      .size(GAIN_WIDTH_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -207,7 +207,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_mix_channel_gain_2", 0, GAIN_WIDTH_P);
+    add_hdl_path_slice("cr_mix_channel_gain_2", 0, GAIN_WIDTH_C);
 
   endfunction
 
@@ -276,7 +276,7 @@ class osc0_frequency_reg extends uvm_reg;
     cr_osc0_frequency = uvm_reg_field::type_id::create("cr_osc0_frequency");
     cr_osc0_frequency.configure(
       .parent(this),
-      .size(N_BITS_P),
+      .size(N_BITS_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -285,7 +285,7 @@ class osc0_frequency_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_osc0_frequency", 0, N_BITS_P);
+    add_hdl_path_slice("cr_osc0_frequency", 0, N_BITS_C);
 
   endfunction
 
@@ -315,7 +315,7 @@ class osc0_duty_cycle_reg extends uvm_reg;
     cr_osc0_duty_cycle = uvm_reg_field::type_id::create("cr_osc0_duty_cycle");
     cr_osc0_duty_cycle.configure(
       .parent(this),
-      .size(N_BITS_P),
+      .size(N_BITS_C),
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
@@ -324,7 +324,7 @@ class osc0_duty_cycle_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_osc0_duty_cycle", 0, N_BITS_P);
+    add_hdl_path_slice("cr_osc0_duty_cycle", 0, N_BITS_C);
 
   endfunction
 
@@ -354,7 +354,7 @@ class cir_min_adc_amplitude_reg extends uvm_reg;
     sr_cir_min_adc_amplitude = uvm_reg_field::type_id::create("sr_cir_min_adc_amplitude");
     sr_cir_min_adc_amplitude.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -363,7 +363,7 @@ class cir_min_adc_amplitude_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_cir_min_adc_amplitude", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_cir_min_adc_amplitude", 0, AUDIO_WIDTH_C);
 
   endfunction
 
@@ -393,7 +393,7 @@ class cir_max_adc_amplitude_reg extends uvm_reg;
     sr_cir_max_adc_amplitude = uvm_reg_field::type_id::create("sr_cir_max_adc_amplitude");
     sr_cir_max_adc_amplitude.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -402,7 +402,7 @@ class cir_max_adc_amplitude_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_cir_max_adc_amplitude", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_cir_max_adc_amplitude", 0, AUDIO_WIDTH_C);
 
   endfunction
 
@@ -432,7 +432,7 @@ class cir_min_dac_amplitude_reg extends uvm_reg;
     sr_cir_min_dac_amplitude = uvm_reg_field::type_id::create("sr_cir_min_dac_amplitude");
     sr_cir_min_dac_amplitude.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -441,7 +441,7 @@ class cir_min_dac_amplitude_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_cir_min_dac_amplitude", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_cir_min_dac_amplitude", 0, AUDIO_WIDTH_C);
 
   endfunction
 
@@ -471,7 +471,7 @@ class cir_max_dac_amplitude_reg extends uvm_reg;
     sr_cir_max_dac_amplitude = uvm_reg_field::type_id::create("sr_cir_max_dac_amplitude");
     sr_cir_max_dac_amplitude.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -480,7 +480,7 @@ class cir_max_dac_amplitude_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_cir_max_dac_amplitude", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_cir_max_dac_amplitude", 0, AUDIO_WIDTH_C);
 
   endfunction
 
@@ -627,7 +627,7 @@ class mix_out_left_reg extends uvm_reg;
     sr_mix_out_left = uvm_reg_field::type_id::create("sr_mix_out_left");
     sr_mix_out_left.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -636,7 +636,7 @@ class mix_out_left_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_mix_out_left", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_mix_out_left", 0, AUDIO_WIDTH_C);
 
   endfunction
 
@@ -666,7 +666,7 @@ class mix_out_right_reg extends uvm_reg;
     sr_mix_out_right = uvm_reg_field::type_id::create("sr_mix_out_right");
     sr_mix_out_right.configure(
       .parent(this),
-      .size(AUDIO_WIDTH_P),
+      .size(AUDIO_WIDTH_C),
       .lsb_pos(0),
       .access("RO"),
       .volatile(0),
@@ -675,7 +675,7 @@ class mix_out_right_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("sr_mix_out_right", 0, AUDIO_WIDTH_P);
+    add_hdl_path_slice("sr_mix_out_right", 0, AUDIO_WIDTH_C);
 
   endfunction
 

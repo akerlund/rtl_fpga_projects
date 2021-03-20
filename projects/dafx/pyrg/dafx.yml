@@ -13,7 +13,7 @@ dafx:
         - field: {
           name:        sr_hardware_version,
           description: Hardware version,
-          size:        AXI_DATA_WIDTH_P,
+          size:        AXI_DATA_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -24,7 +24,7 @@ dafx:
         - field: {
           name:        cr_mix_output_gain,
           description: Mixer's output gain,
-          size:        GAIN_WIDTH_P,
+          size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1
         }
@@ -36,7 +36,7 @@ dafx:
         - field: {
           name:        cr_mix_channel_gain_0,
           description: Mixer's input gain of channel 0,
-          size:        GAIN_WIDTH_P,
+          size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1
         }
@@ -48,7 +48,7 @@ dafx:
         - field: {
           name:        cr_mix_channel_gain_1,
           description: Mixer's input gain of channel 1,
-          size:        GAIN_WIDTH_P,
+          size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1
         }
@@ -60,7 +60,7 @@ dafx:
         - field: {
           name:        cr_mix_channel_gain_2,
           description: Mixer's input gain of channel 2,
-          size:        GAIN_WIDTH_P,
+          size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1
         }
@@ -84,7 +84,7 @@ dafx:
         - field: {
           name:        cr_osc0_frequency,
           description: Sets the frequency of oscillator 0,
-          size:        N_BITS_P,
+          size:        N_BITS_C,
           lsb_pos:     0,
           reset_value: 500
         }
@@ -96,7 +96,7 @@ dafx:
         - field: {
           name:        cr_osc0_duty_cycle,
           description: Sets the duty cycle of the square wave,
-          size:        N_BITS_P,
+          size:        N_BITS_C,
           lsb_pos:     0,
           reset_value: 500
         }
@@ -108,7 +108,7 @@ dafx:
         - field: {
           name:        sr_cir_min_adc_amplitude,
           description: Lowest value of the ADC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -119,7 +119,7 @@ dafx:
         - field: {
           name:        sr_cir_max_adc_amplitude,
           description: Highest value of the ADC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -130,7 +130,7 @@ dafx:
         - field: {
           name:        sr_cir_min_dac_amplitude,
           description: Lowest value of the DAC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -141,7 +141,7 @@ dafx:
         - field: {
           name:        sr_cir_max_dac_amplitude,
           description: Highest value of the DAC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -187,7 +187,7 @@ dafx:
         - field: {
           name:        sr_mix_out_left,
           description: Current left value forwarded to the DAC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }
 
@@ -198,6 +198,6 @@ dafx:
         - field: {
           name:        sr_mix_out_right,
           description: Current right value forwarded to the DAC,
-          size:        AUDIO_WIDTH_P,
+          size:        AUDIO_WIDTH_C,
           lsb_pos:     0
         }

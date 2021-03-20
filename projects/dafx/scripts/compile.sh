@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Specify the top files
-rtl_top=project_top
-uvm_top=""
+rtl_top="dafx_top"
+uvm_top="dafx_tb_top"
 
 # ------------------------------------------------------------------------------
 # Source submodules
@@ -30,6 +30,14 @@ source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/delay_e
 source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/frequency_enable/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/oscillator/rtl/rtl_files.lst
 
+git_root="$(git rev-parse --show-toplevel)/submodules/VIP" # The submodules use this variable
+git_sub_root="$(git rev-parse --show-toplevel)"            # We use this, because the former name is now taken
+source $git_sub_root/submodules/VIP/bool/files.lst
+source $git_sub_root/submodules/VIP/vip_axi4_agent/files.lst
+source $git_sub_root/submodules/VIP/vip_axi4s_agent/files.lst
+source $git_sub_root/submodules/VIP/vip_clk_rst_agent/files.lst
+source $git_sub_root/submodules/VIP/report_server/files.lst
+
 # Printing out the files
 eval "arr=($rtl_files)"
 
@@ -51,7 +59,8 @@ source $git_root/components/arty_z7_buttons/rtl/rtl_files.lst
 source $git_root/components/cs5343/rtl/rtl_files.lst
 
 # Source the module's file lists
-source ./rtl/rtl_files.lst
+source ./rtl/files.lst
+source ./tb/files.lst
 
 # Parameter override
 parameters+=(" ")
