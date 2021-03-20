@@ -1,6 +1,9 @@
 [submodule "submodules/rtl_common_design"]
 	path = submodules/rtl_common_design
-	url = git@github.com/akerlund/rtl_common_design.git
+	url = https://github.com/akerlund/rtl_common_design.git
 [submodule "submodules/VIP"]
 	path = submodules/VIP
 	url = https://github.com/akerlund/VIP.git
+[submodule "submodules/PYRG"]
+	path = submodules/PYRG
+	url = https://github.com/akerlund/PYRG.git
