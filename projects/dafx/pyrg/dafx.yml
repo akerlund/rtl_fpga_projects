@@ -1,8 +1,12 @@
 ---
 dafx:
-  base_addr: "'h00000000"
+
   bus_width: 32
-  acronym: "DAFX"
+
+  parameters:
+    - GAIN_WIDTH_C
+    - N_BITS_C
+    - AUDIO_WIDTH_C
 
   registers:
 

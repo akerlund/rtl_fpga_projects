@@ -27,8 +27,10 @@ module dafx_core #(
     parameter int MC_ID_WIDTH_P    = 6,
     parameter int MC_ADDR_WIDTH_P  = 32,
     parameter int MC_DATA_WIDTH_P  = 128,
+    parameter int CFG_ID_WIDTH_P   = 16,
     parameter int CFG_ADDR_WIDTH_P = 16,
     parameter int CFG_DATA_WIDTH_P = 64,
+    parameter int CFG_STRB_WIDTH_P = 64,
     parameter int AXI_ID_WIDTH_P   = 32,
     parameter int AXI_ADDR_WIDTH_P = 7,
     parameter int AXI_DATA_WIDTH_P = 32,
@@ -92,6 +94,7 @@ module dafx_core #(
     output logic                                  cfg_arready,
 
     // Read Data Channel
+    output logic           [CFG_ID_WIDTH_P-1 : 0] cfg_rid,
     output logic         [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
     output logic                          [1 : 0] cfg_rresp,
     output logic                                  cfg_rlast,
@@ -138,9 +141,9 @@ module dafx_core #(
     input  wire                                   mc_arready,
 
     // Read Data Channel
-    input  wire            [MC_ID_WIDTH_P-1 : 0] mc_rid,
+    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_rid,
     input  wire                           [1 : 0] mc_rresp,
-    input  wire          [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
+    input  wire           [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
     input  wire                                   mc_rlast,
     input  wire                                   mc_rvalid,
     output logic                                  mc_rready,
@@ -155,6 +158,14 @@ module dafx_core #(
     output logic                                  cs_rx_sclk,
     input  wire                                   cs_rx_sdin
   );
+
+  axi4_reg_if  #(
+    .AXI4_ID_WIDTH_P   ( CFG_ID_WIDTH_P   ),
+    .AXI4_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P ),
+    .AXI4_DATA_WIDTH_P ( CFG_DATA_WIDTH_P ),
+    .AXI4_STRB_WIDTH_P ( CFG_STRB_WIDTH_P )
+  ) dafx_cfg_if (clk_rst_vif.clk, clk_rst_vif.rst_n);
+
 
   // -----------------------------------------------------------------------------
   // Constants
@@ -298,11 +309,42 @@ module dafx_core #(
   assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1 << Q_BITS_C;
   assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2 << Q_BITS_C;
 
+  //----------------------------------------------------------------------------
+  // Register
+  //----------------------------------------------------------------------------
+
+  // Write Address Channel
+  assign dafx_cfg_if.awaddr  = cfg_awaddr;
+  assign dafx_cfg_if.awvalid = cfg_awvalid;
+  assign cfg_awready = dafx_cfg_if.awready;
+
+  // Write Data Channel
+  assign dafx_cfg_if.wdata   = cfg_wdata;
+  assign dafx_cfg_if.wstrb   = cfg_wstrb;
+  assign dafx_cfg_if.wlast   = cfg_wlast;
+  assign dafx_cfg_if.wvalid  = cfg_wvalid;
+  assign cfg_wready  = dafx_cfg_if.wready;
+
+  // Write Response Channel
+  assign cfg_bresp   = dafx_cfg_if.bresp;
+  assign cfg_bvalid  = dafx_cfg_if.bvalid;
+  assign dafx_cfg_if.bready  = cfg_bready;
+
+  // Read Address Channel
+  assign dafx_cfg_if.araddr  = cfg_araddr;
+  assign dafx_cfg_if.arlen   = cfg_arlen;
+  assign dafx_cfg_if.arvalid = cfg_arvalid;
+  assign cfg_arready = dafx_cfg_if.arready;
+
+  // Read Data Channel
+  assign cfg_rdata   = dafx_cfg_if.rdata;
+  assign cfg_rresp   = dafx_cfg_if.rresp;
+  assign cfg_rlast   = dafx_cfg_if.rlast;
+  assign cfg_rvalid  = dafx_cfg_if.rvalid;
+  assign dafx_cfg_if.rready  = cfg_rready;
 
 
   // Oscillator
-
-
   logic signed [WAVE_WIDTH_C-1 : 0] osc_waveform;
   logic                     [1 : 0] cr_osc0_waveform_select;
   logic            [N_BITS_C-1 : 0] cr_osc0_frequency;
@@ -802,32 +844,7 @@ module dafx_core #(
     .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
     .N_BITS_C                 ( N_BITS_C                  )
   ) dafx_axi_slave_i0 (
-
-    .clk                      ( clk                       ), // input
-    .rst_n                    ( rst_n                     ), // input
-
-    .awaddr                   ( cfg_awaddr                ), // input
-    .awvalid                  ( cfg_awvalid               ), // input
-    .awready                  ( cfg_awready               ), // output
-
-    .wdata                    ( cfg_wdata                 ), // input
-    .wstrb                    ( cfg_wstrb                 ), // input
-    .wvalid                   ( cfg_wvalid                ), // input
-    .wready                   ( cfg_wready                ), // output
-
-    .bresp                    ( cfg_bresp                 ), // output
-    .bvalid                   ( cfg_bvalid                ), // output
-    .bready                   ( cfg_bready                ), // input
-
-    .araddr                   ( cfg_araddr                ), // input
-    .arvalid                  ( cfg_arvalid               ), // input
-    .arready                  ( cfg_arready               ), // output
-
-    .rdata                    ( cfg_rdata                 ), // output
-    .rresp                    ( cfg_rresp                 ), // output
-    .rvalid                   ( cfg_rvalid                ), // output
-    .rready                   ( cfg_rready                ), // input
-
+    .cif                      ( dafx_cfg_if.slave         ), // modport
     .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
     .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
     .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output

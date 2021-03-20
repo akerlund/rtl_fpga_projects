@@ -25,8 +25,12 @@ package dafx_pkg;
   localparam int MC_ID_WIDTH_C    = 6;
   localparam int MC_ADDR_WIDTH_C  = 32;
   localparam int MC_DATA_WIDTH_C  = 128;
+
+  localparam int CFG_ID_WIDTH_C   = 6;
   localparam int CFG_ADDR_WIDTH_C = 16;
   localparam int CFG_DATA_WIDTH_C = 64;
+  localparam int CFG_STRB_WIDTH_C = 8;
+
   localparam int AXI_ID_WIDTH_C   = 32;
   localparam int AXI_ADDR_WIDTH_C = 7;
   localparam int AXI_DATA_WIDTH_C = 32;

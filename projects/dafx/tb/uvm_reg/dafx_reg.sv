@@ -29,7 +29,7 @@ class hardware_version_reg extends uvm_reg;
 
 
   function new (string name = "hardware_version_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, 64, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -68,7 +68,7 @@ class mixer_output_gain_reg extends uvm_reg;
 
 
   function new (string name = "mixer_output_gain_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, GAIN_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -107,7 +107,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
 
 
   function new (string name = "mixer_channel_gain_0_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, GAIN_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -146,7 +146,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
 
 
   function new (string name = "mixer_channel_gain_1_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, GAIN_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -185,7 +185,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
 
 
   function new (string name = "mixer_channel_gain_2_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, GAIN_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -224,7 +224,7 @@ class osc0_waveform_select_reg extends uvm_reg;
 
 
   function new (string name = "osc0_waveform_select_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, 2, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -263,7 +263,7 @@ class osc0_frequency_reg extends uvm_reg;
 
 
   function new (string name = "osc0_frequency_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, N_BITS_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -302,7 +302,7 @@ class osc0_duty_cycle_reg extends uvm_reg;
 
 
   function new (string name = "osc0_duty_cycle_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, N_BITS_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -341,7 +341,7 @@ class cir_min_adc_amplitude_reg extends uvm_reg;
 
 
   function new (string name = "cir_min_adc_amplitude_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -380,7 +380,7 @@ class cir_max_adc_amplitude_reg extends uvm_reg;
 
 
   function new (string name = "cir_max_adc_amplitude_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -419,7 +419,7 @@ class cir_min_dac_amplitude_reg extends uvm_reg;
 
 
   function new (string name = "cir_min_dac_amplitude_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -458,7 +458,7 @@ class cir_max_dac_amplitude_reg extends uvm_reg;
 
 
   function new (string name = "cir_max_dac_amplitude_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -497,7 +497,7 @@ class clear_adc_amplitude_reg extends uvm_reg;
 
 
   function new (string name = "clear_adc_amplitude_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, 1, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -536,7 +536,7 @@ class clear_irq_0_reg extends uvm_reg;
 
 
   function new (string name = "clear_irq_0_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, 1, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -575,7 +575,7 @@ class clear_irq_1_reg extends uvm_reg;
 
 
   function new (string name = "clear_irq_1_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, 1, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -614,7 +614,7 @@ class mix_out_left_reg extends uvm_reg;
 
 
   function new (string name = "mix_out_left_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -653,7 +653,7 @@ class mix_out_right_reg extends uvm_reg;
 
 
   function new (string name = "mix_out_right_reg");
-    super.new(name, 32, UVM_NO_COVERAGE);
+    super.new(name, AUDIO_WIDTH_C, UVM_NO_COVERAGE);
   endfunction
 
 

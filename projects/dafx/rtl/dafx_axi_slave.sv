@@ -25,48 +25,11 @@ module dafx_axi_slave #(
     parameter int AUDIO_WIDTH_C = -1,
     parameter int AXI_ADDR_WIDTH_P = -1,
     parameter int AXI_DATA_WIDTH_P = -1,
+    parameter int AXI_ID_P = -1,
     parameter int GAIN_WIDTH_C = -1,
     parameter int N_BITS_C = -1
   )(
-
-    // ---------------------------------------------------------------------------
-    // AXI ports
-    // ---------------------------------------------------------------------------
-
-    // Clock and reset
-    input  wire                               clk,
-    input  wire                               rst_n,
-
-    // Write Address Channel
-    input  wire      [AXI_ADDR_WIDTH_P-1 : 0] awaddr,
-    input  wire                               awvalid,
-    output logic                              awready,
-
-    // Write Data Channel
-    input  wire      [AXI_DATA_WIDTH_P-1 : 0] wdata,
-    input  wire  [(AXI_DATA_WIDTH_P/8)-1 : 0] wstrb,
-    input  wire                               wvalid,
-    output logic                              wready,
-
-    // Write Response Channel
-    output logic                      [1 : 0] bresp,
-    output logic                              bvalid,
-    input  wire                               bready,
-
-    // Read Address Channel
-    input  wire      [AXI_ADDR_WIDTH_P-1 : 0] araddr,
-    input  wire                               arvalid,
-    output logic                              arready,
-
-    // Read Data Channel
-    output logic     [AXI_DATA_WIDTH_P-1 : 0] rdata,
-    output logic                      [1 : 0] rresp,
-    output logic                              rvalid,
-    input  wire                               rready,
-
-    // ---------------------------------------------------------------------------
-    // Register Ports
-    // ---------------------------------------------------------------------------
+    axi4_reg_if.slave cif,
     input  wire               [63 : 0] sr_hardware_version,
     output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
     output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0,
@@ -86,86 +49,52 @@ module dafx_axi_slave #(
     input  wire  [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
   );
 
+  localparam logic [1 : 0] AXI_RESP_SLVERR_C = 2'b01;
+
   // ---------------------------------------------------------------------------
   // Internal signals
   // ---------------------------------------------------------------------------
 
-  logic                          aw_enable;
-  logic [AXI_ADDR_WIDTH_P-1 : 0] awaddr_d0;
-  logic                          write_enable;
-  logic                          read_enable;
-  logic [AXI_ADDR_WIDTH_P-1 : 0] araddr_d0;
-  logic [AXI_DATA_WIDTH_P-1 : 0] rdata_d0;
+  typedef enum {
+    WAIT_MST_AWVALID_E,
+    WAIT_FOR_BREADY_E,
+    WAIT_MST_WLAST_E
+  } write_state_t;
 
+  write_state_t write_state;
 
-  // ---------------------------------------------------------------------------
-  // Internal assignments
-  // ---------------------------------------------------------------------------
+  logic [AXI_ADDR_WIDTH_P-1 : 0] awaddr_r0;
 
-  assign write_enable = wready  && wvalid  && awready && awvalid;
-  assign read_enable  = arready && arvalid && !rvalid;
+  typedef enum {
+    WAIT_MST_ARVALID_E,
+    WAIT_SLV_RLAST_E
+  } read_state_t;
 
-  // ---------------------------------------------------------------------------
-  // Write Address Channel
-  // Generate "awready" and internal address write enable
-  // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      awaddr_d0 <= '0;
-      awready   <= '0;
-      aw_enable <= '1;
-    end
-    else begin
+  read_state_t read_state;
 
-      // awready
-      if (!awready && awvalid && wvalid && aw_enable) begin
-        awready   <= '1;
-        aw_enable <= '0;
-      end
-      else if (bready && bvalid) begin
-        aw_enable <= '1;
-        awready   <= '0;
-      end
-      else begin
-        awready   <= '0;
-      end
+  logic [AXI_ADDR_WIDTH_P-1 : 0] araddr_r0;
+  logic                  [7 : 0] arlen_r0;
 
-      // awaddr
-      if (!awready && awvalid && wvalid && aw_enable) begin
-        awaddr_d0 <= awaddr;
-      end
-
-    end
-  end
 
 
   // ---------------------------------------------------------------------------
-  // Write Data Channel
-  // Generate "wready"
+  // Port assignments
   // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      wready <= '0;
-    end
-    else begin
 
-      if (!wready && wvalid && awvalid && aw_enable) begin
-        wready <= '1;
-      end
-      else begin
-        wready <= '0;
-      end
-
-    end
-  end
-
+  assign cif.rid = AXI_ID_P;
 
   // ---------------------------------------------------------------------------
-  // Register writes
+  // Write processes
   // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+  always_ff @(posedge cif.clk or negedge cif.rst_n) begin
+    if (!cif.rst_n) begin
 
+      write_state <= WAIT_MST_AWVALID_E;
+      awaddr_r0   <= '0;
+      cif.awready <= '0;
+      cif.wready  <= '0;
+      cif.bvalid  <= '0;
+      cif.bresp   <= '0;
       cr_mix_output_gain      <= 1;
       cr_mix_channel_gain_0   <= 1;
       cr_mix_channel_gain_1   <= 1;
@@ -183,203 +112,240 @@ module dafx_axi_slave #(
       cmd_clear_irq_0         <= '0;
       cmd_clear_irq_1         <= '0;
 
-      if (write_enable) begin
-
-        case (awaddr_d0)
-
-          DAFX_MIXER_OUTPUT_GAIN_ADDR: begin
-            cr_mix_output_gain <= wdata[GAIN_WIDTH_C-1 : 0];
-          end
-
-          DAFX_MIXER_CHANNEL_GAIN_0_ADDR: begin
-            cr_mix_channel_gain_0 <= wdata[GAIN_WIDTH_C-1 : 0];
-          end
-
-          DAFX_MIXER_CHANNEL_GAIN_1_ADDR: begin
-            cr_mix_channel_gain_1 <= wdata[GAIN_WIDTH_C-1 : 0];
-          end
-
-          DAFX_MIXER_CHANNEL_GAIN_2_ADDR: begin
-            cr_mix_channel_gain_2 <= wdata[GAIN_WIDTH_C-1 : 0];
-          end
-
-          DAFX_OSC0_WAVEFORM_SELECT_ADDR: begin
-            cr_osc0_waveform_select <= wdata[1 : 0];
-          end
-
-          DAFX_OSC0_FREQUENCY_ADDR: begin
-            cr_osc0_frequency <= wdata[N_BITS_C-1 : 0];
-          end
-
-          DAFX_OSC0_DUTY_CYCLE_ADDR: begin
-            cr_osc0_duty_cycle <= wdata[N_BITS_C-1 : 0];
-          end
-
-          DAFX_CLEAR_ADC_AMPLITUDE_ADDR: begin
-            cmd_clear_adc_amplitude <= wdata[0];
-          end
-
-          DAFX_CLEAR_IRQ_0_ADDR: begin
-            cmd_clear_irq_0 <= wdata[0];
-          end
-
-          DAFX_CLEAR_IRQ_1_ADDR: begin
-            cmd_clear_irq_1 <= wdata[0];
-          end
 
 
-          default : begin
+      case (write_state)
 
-          end
-
-        endcase
-      end
-    end
-  end
-
-
-  // ---------------------------------------------------------------------------
-  // Write Response Channel
-  // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      bvalid <= '0;
-      bresp  <= '0;
-    end
-    else begin
-
-      if (awready && awvalid && !bvalid && wready && wvalid) begin
-        bvalid <= '1;
-        bresp  <= '0;
-      end
-      else begin
-        if (bready && bvalid) begin
-          bvalid <= '0;
+        default: begin
+          write_state <= WAIT_MST_AWVALID_E;
         end
-      end
+
+        WAIT_MST_AWVALID_E: begin
+
+          cif.awready <= '1;
+
+          if (cif.awvalid) begin
+            write_state <= WAIT_MST_WLAST_E;
+            cif.awready <= '0;
+            awaddr_r0   <= cif.awaddr;
+            cif.wready  <= '1;
+          end
+
+        end
+
+
+        WAIT_FOR_BREADY_E: begin
+
+          if (cif.bvalid && cif.bready) begin
+            write_state <= WAIT_MST_AWVALID_E;
+            cif.awready <= '1;
+            cif.bvalid  <= '0;
+            cif.bresp   <= '0;
+          end
+
+        end
+
+
+        WAIT_MST_WLAST_E: begin
+
+          if (cif.wlast && cif.wvalid) begin
+            write_state <= WAIT_FOR_BREADY_E;
+            cif.bvalid  <= '1;
+            cif.wready  <= '0;
+          end
+
+
+          if (cif.wvalid) begin
+
+            awaddr_r0 <= awaddr_r0 + (AXI_DATA_WIDTH_P/8);
+
+            case (awaddr_r0)
+
+              MIXER_OUTPUT_GAIN_ADDR: begin
+                cr_mix_output_gain <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+              end
+
+              MIXER_CHANNEL_GAIN_0_ADDR: begin
+                cr_mix_channel_gain_0 <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+              end
+
+              MIXER_CHANNEL_GAIN_1_ADDR: begin
+                cr_mix_channel_gain_1 <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+              end
+
+              MIXER_CHANNEL_GAIN_2_ADDR: begin
+                cr_mix_channel_gain_2 <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+              end
+
+              OSC0_WAVEFORM_SELECT_ADDR: begin
+                cr_osc0_waveform_select <= cif.wdata[1 : 0];
+              end
+
+              OSC0_FREQUENCY_ADDR: begin
+                cr_osc0_frequency <= cif.wdata[N_BITS_C-1 : 0];
+              end
+
+              OSC0_DUTY_CYCLE_ADDR: begin
+                cr_osc0_duty_cycle <= cif.wdata[N_BITS_C-1 : 0];
+              end
+
+              CLEAR_ADC_AMPLITUDE_ADDR: begin
+                cmd_clear_adc_amplitude <= cif.wdata[0];
+              end
+
+              CLEAR_IRQ_0_ADDR: begin
+                cmd_clear_irq_0 <= cif.wdata[0];
+              end
+
+              CLEAR_IRQ_1_ADDR: begin
+                cmd_clear_irq_1 <= cif.wdata[0];
+              end
+
+
+              default: begin
+                cif.bresp <= AXI_RESP_SLVERR_C;
+              end
+
+            endcase
+
+
+          end
+        end
+      endcase
     end
   end
 
+  // ---------------------------------------------------------------------------
+  // Read process
+  // ---------------------------------------------------------------------------
 
-  // ---------------------------------------------------------------------------
-  // Read Address Channel
-  // Generate "arready"
-  // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      arready   <= '0;
-      araddr_d0 <= '0;
+  assign cif.rlast = (arlen_r0 == '0);
+
+  // FSM
+  always_ff @(posedge cif.clk or negedge cif.rst_n) begin
+    if (!cif.rst_n) begin
+
+      read_state  <= WAIT_MST_ARVALID_E;
+      cif.arready <= '0;
+      araddr_r0   <= '0;
+      arlen_r0    <= '0;
+      cif.rvalid  <= '0;
+
     end
     else begin
 
-      if (!arready && arvalid) begin
-        arready   <= '1;
-        araddr_d0 <= araddr;
-      end
-      else begin
-        arready <= '0;
-      end
+      case (read_state)
 
+        default: begin
+          read_state <= WAIT_MST_ARVALID_E;
+        end
+
+        WAIT_MST_ARVALID_E: begin
+
+          cif.arready <= '1;
+
+          if (cif.arvalid) begin
+            read_state  <= WAIT_SLV_RLAST_E;
+            araddr_r0   <= cif.araddr;
+            arlen_r0    <= cif.arlen;
+            cif.arready <= '0;
+            cif.rvalid  <= '1;
+          end
+
+        end
+
+        WAIT_SLV_RLAST_E: begin
+
+
+          if (cif.rready) begin
+            araddr_r0 <= araddr_r0 + (AXI_DATA_WIDTH_P/8);
+          end
+
+          if (cif.rlast && cif.rready) begin
+            read_state  <= WAIT_MST_ARVALID_E;
+            cif.arready <= '1;
+            cif.rvalid  <= '0;
+          end
+
+          if (arlen_r0 != '0) begin
+            arlen_r0 <= arlen_r0 - 1;
+          end
+
+        end
+      endcase
     end
   end
 
 
-  // ---------------------------------------------------------------------------
-  // Read Data Channel
-  // Generate "rvalid"
-  // ---------------------------------------------------------------------------
-  always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-      rdata  <= 0;
-      rresp  <= 0;
-      rvalid <= 0;
-    end
-    else begin
-
-      if (read_enable) begin
-        rdata <= rdata_d0;
-      end
-
-      if (arready && arvalid && !rvalid) begin
-        rvalid <= '1;
-        rresp  <= '0;
-      end
-      else if (rvalid && rready) begin
-        rvalid <= '0;
-      end
-
-    end
-  end
-
-
-  // ---------------------------------------------------------------------------
-  // Register reads
-  // ---------------------------------------------------------------------------
   always_comb begin
 
-    rdata_d0 = '0;
+    cif.rdata = '0;
+    cif.rresp = '0;
 
-    // Address decoding for reading registers
-    case (araddr_d0)
 
-      DAFX_HARDWARE_VERSION_ADDR: begin
-        rdata_d0[63 : 0] = sr_hardware_version;
+    case (araddr_r0)
+
+      HARDWARE_VERSION_ADDR: begin
+        cif.rdata[63 : 0] = sr_hardware_version;
       end
 
-      DAFX_MIXER_OUTPUT_GAIN_ADDR: begin
-        rdata_d0[GAIN_WIDTH_C-1 : 0] = cr_mix_output_gain;
+      MIXER_OUTPUT_GAIN_ADDR: begin
+        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_output_gain;
       end
 
-      DAFX_MIXER_CHANNEL_GAIN_0_ADDR: begin
-        rdata_d0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_0;
+      MIXER_CHANNEL_GAIN_0_ADDR: begin
+        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_0;
       end
 
-      DAFX_MIXER_CHANNEL_GAIN_1_ADDR: begin
-        rdata_d0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_1;
+      MIXER_CHANNEL_GAIN_1_ADDR: begin
+        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_1;
       end
 
-      DAFX_MIXER_CHANNEL_GAIN_2_ADDR: begin
-        rdata_d0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_2;
+      MIXER_CHANNEL_GAIN_2_ADDR: begin
+        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain_2;
       end
 
-      DAFX_OSC0_WAVEFORM_SELECT_ADDR: begin
-        rdata_d0[1 : 0] = cr_osc0_waveform_select;
+      OSC0_WAVEFORM_SELECT_ADDR: begin
+        cif.rdata[1 : 0] = cr_osc0_waveform_select;
       end
 
-      DAFX_OSC0_FREQUENCY_ADDR: begin
-        rdata_d0[N_BITS_C-1 : 0] = cr_osc0_frequency;
+      OSC0_FREQUENCY_ADDR: begin
+        cif.rdata[N_BITS_C-1 : 0] = cr_osc0_frequency;
       end
 
-      DAFX_OSC0_DUTY_CYCLE_ADDR: begin
-        rdata_d0[N_BITS_C-1 : 0] = cr_osc0_duty_cycle;
+      OSC0_DUTY_CYCLE_ADDR: begin
+        cif.rdata[N_BITS_C-1 : 0] = cr_osc0_duty_cycle;
       end
 
-      DAFX_CIR_MIN_ADC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_adc_amplitude;
+      CIR_MIN_ADC_AMPLITUDE_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_adc_amplitude;
       end
 
-      DAFX_CIR_MAX_ADC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_adc_amplitude;
+      CIR_MAX_ADC_AMPLITUDE_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_adc_amplitude;
       end
 
-      DAFX_CIR_MIN_DAC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_dac_amplitude;
+      CIR_MIN_DAC_AMPLITUDE_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_dac_amplitude;
       end
 
-      DAFX_CIR_MAX_DAC_AMPLITUDE_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_dac_amplitude;
+      CIR_MAX_DAC_AMPLITUDE_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_dac_amplitude;
       end
 
-      DAFX_MIX_OUT_LEFT_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_left;
+      MIX_OUT_LEFT_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_left;
       end
 
-      DAFX_MIX_OUT_RIGHT_ADDR: begin
-        rdata_d0[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_right;
+      MIX_OUT_RIGHT_ADDR: begin
+        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_right;
       end
 
 
-      default : rdata_d0 = 32'hBAADFACE;
+      default: begin
+        cif.rresp = AXI_RESP_SLVERR_C;
+        cif.rdata = '0;
+      end
 
     endcase
   end

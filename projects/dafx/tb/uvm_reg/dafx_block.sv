@@ -118,7 +118,7 @@ class dafx_block extends uvm_reg_block;
 
 
 
-    default_map = create_map("dafx_map", 'h00000000, 32, UVM_LITTLE_ENDIAN);
+    default_map = create_map("dafx_map", 0, 4, UVM_LITTLE_ENDIAN);
 
     default_map.add_reg(hardware_version, 0, "RO");
     default_map.add_reg(mixer_output_gain, 4, "RW");
