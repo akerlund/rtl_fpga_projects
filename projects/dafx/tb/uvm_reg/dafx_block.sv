@@ -118,25 +118,25 @@ class dafx_block extends uvm_reg_block;
 
 
 
-    default_map = create_map("dafx_map", 0, 4, UVM_LITTLE_ENDIAN);
+    default_map = create_map("dafx_map", 0, 8, UVM_LITTLE_ENDIAN);
 
     default_map.add_reg(hardware_version, 0, "RO");
-    default_map.add_reg(mixer_output_gain, 4, "RW");
-    default_map.add_reg(mixer_channel_gain_0, 8, "RW");
-    default_map.add_reg(mixer_channel_gain_1, 12, "RW");
-    default_map.add_reg(mixer_channel_gain_2, 16, "RW");
-    default_map.add_reg(osc0_waveform_select, 20, "RW");
-    default_map.add_reg(osc0_frequency, 24, "RW");
-    default_map.add_reg(osc0_duty_cycle, 28, "RW");
-    default_map.add_reg(cir_min_adc_amplitude, 32, "RO");
-    default_map.add_reg(cir_max_adc_amplitude, 36, "RO");
-    default_map.add_reg(cir_min_dac_amplitude, 40, "RO");
-    default_map.add_reg(cir_max_dac_amplitude, 44, "RO");
-    default_map.add_reg(clear_adc_amplitude, 48, "WO");
-    default_map.add_reg(clear_irq_0, 52, "WO");
-    default_map.add_reg(clear_irq_1, 56, "WO");
-    default_map.add_reg(mix_out_left, 60, "RO");
-    default_map.add_reg(mix_out_right, 64, "RO");
+    default_map.add_reg(mixer_output_gain, 8, "RW");
+    default_map.add_reg(mixer_channel_gain_0, 16, "RW");
+    default_map.add_reg(mixer_channel_gain_1, 24, "RW");
+    default_map.add_reg(mixer_channel_gain_2, 32, "RW");
+    default_map.add_reg(osc0_waveform_select, 40, "RW");
+    default_map.add_reg(osc0_frequency, 48, "RW");
+    default_map.add_reg(osc0_duty_cycle, 56, "RW");
+    default_map.add_reg(cir_min_adc_amplitude, 64, "RO");
+    default_map.add_reg(cir_max_adc_amplitude, 72, "RO");
+    default_map.add_reg(cir_min_dac_amplitude, 80, "RO");
+    default_map.add_reg(cir_max_dac_amplitude, 88, "RO");
+    default_map.add_reg(clear_adc_amplitude, 96, "WO");
+    default_map.add_reg(clear_irq_0, 104, "WO");
+    default_map.add_reg(clear_irq_1, 112, "WO");
+    default_map.add_reg(mix_out_left, 120, "RO");
+    default_map.add_reg(mix_out_right, 128, "RO");
 
 
     lock_model();

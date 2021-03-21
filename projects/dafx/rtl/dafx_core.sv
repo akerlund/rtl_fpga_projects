@@ -27,6 +27,7 @@ module dafx_core #(
     parameter int MC_ID_WIDTH_P    = 6,
     parameter int MC_ADDR_WIDTH_P  = 32,
     parameter int MC_DATA_WIDTH_P  = 128,
+    parameter int MC_STRB_WIDTH_P  = MC_DATA_WIDTH_P/8,
     parameter int CFG_ID_WIDTH_P   = 16,
     parameter int CFG_ADDR_WIDTH_P = 16,
     parameter int CFG_DATA_WIDTH_P = 64,
@@ -42,6 +43,16 @@ module dafx_core #(
     input  wire                                   rst_n,
     input  wire                                   clk_mclk,
     input  wire                                   rst_mclk_n,
+
+    // Cirrus CS5343 ADC/DAC
+    input  wire                          [23 : 0] cs_adc_data,
+    input  wire                                   cs_adc_valid,
+    output logic                                  cs_adc_ready,
+    input  wire                                   cs_adc_last,
+    output logic                         [23 : 0] cs_dac_data,
+    output logic                                  cs_dac_valid,
+    input  wire                                   cs_dac_ready,
+    output logic                                  cs_dac_last,
 
     // ---------------------------------------------------------------------------
     // PL I/O
@@ -106,8 +117,8 @@ module dafx_core #(
     // ---------------------------------------------------------------------------
 
     // Write Address Channel
-    output logic           [MC_ID_WIDTH_P-1 : 0] mc_awid,
-    output logic         [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
+    output logic            [MC_ID_WIDTH_P-1 : 0] mc_awid,
+    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
     output logic                          [7 : 0] mc_awlen,
     output logic                          [2 : 0] mc_awsize,
     output logic                          [1 : 0] mc_awburst,
@@ -117,21 +128,21 @@ module dafx_core #(
     input  wire                                   mc_awready,
 
     // Write Data Channel
-    output logic         [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
-    output logic     [(MC_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
+    output logic          [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
+    output logic          [MC_STRB_WIDTH_P-1 : 0] mc_wstrb,
     output logic                                  mc_wlast,
     output logic                                  mc_wvalid,
     input  wire                                   mc_wready,
 
     // Write Response Channel
-    input  wire            [MC_ID_WIDTH_P-1 : 0] mc_bid,
+    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_bid,
     input  wire                           [1 : 0] mc_bresp,
     input  wire                                   mc_bvalid,
     output logic                                  mc_bready,
 
     // Read Address Channel
-    output logic           [MC_ID_WIDTH_P-1 : 0] mc_arid,
-    output logic         [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
+    output logic            [MC_ID_WIDTH_P-1 : 0] mc_arid,
+    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
     output logic                          [7 : 0] mc_arlen,
     output logic                          [2 : 0] mc_arsize,
     output logic                          [1 : 0] mc_arburst,
@@ -146,33 +157,15 @@ module dafx_core #(
     input  wire           [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
     input  wire                                   mc_rlast,
     input  wire                                   mc_rvalid,
-    output logic                                  mc_rready,
-
-    // Cirrus CS5343 ADC/DAC
-    output logic                                  cs_tx_mclk,
-    output logic                                  cs_tx_lrck,
-    output logic                                  cs_tx_sclk,
-    output logic                                  cs_tx_sdout,
-    output logic                                  cs_rx_mclk,
-    output logic                                  cs_rx_lrck,
-    output logic                                  cs_rx_sclk,
-    input  wire                                   cs_rx_sdin
+    output logic                                  mc_rready
   );
-
-  axi4_reg_if  #(
-    .AXI4_ID_WIDTH_P   ( CFG_ID_WIDTH_P   ),
-    .AXI4_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P ),
-    .AXI4_DATA_WIDTH_P ( CFG_DATA_WIDTH_P ),
-    .AXI4_STRB_WIDTH_P ( CFG_STRB_WIDTH_P )
-  ) dafx_cfg_if (clk_rst_vif.clk, clk_rst_vif.rst_n);
-
 
   // -----------------------------------------------------------------------------
   // Constants
   // -----------------------------------------------------------------------------
 
   // Common
-  localparam int                            SYS_CLK_FREQUENCY_C  = 125000000;
+  localparam int                            SYS_CLK_FREQUENCY_C   = 125000000;
   localparam logic [AXI_DATA_WIDTH_P-1 : 0] SR_HARDWARE_VERSION_C = 2012;
   localparam int                            NR_OF_MASTERS_C       = 2;
   localparam int                            AUDIO_WIDTH_C         = 24;
@@ -189,9 +182,14 @@ module dafx_core #(
   localparam int DUTY_CYCLE_DIVIDER_C = 1000;
   localparam int N_BITS_C             = 32;
   localparam int Q_BITS_C             = 11;
-  localparam int AXI_DATA_WIDTH_C     = 32;
-  localparam int AXI_ID_WIDTH_C       = 32;
-  localparam int AXI_ID_C             = 32'hDEADBEA7;
+
+  axi4_reg_if  #(
+    .AXI4_ID_WIDTH_P   ( CFG_ID_WIDTH_P   ),
+    .AXI4_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P ),
+    .AXI4_DATA_WIDTH_P ( CFG_DATA_WIDTH_P ),
+    .AXI4_STRB_WIDTH_P ( CFG_STRB_WIDTH_P )
+  ) dafx_cfg_if (clk, rst_n);
+
 
   // -----------------------------------------------------------------------------
   // IRQ
@@ -206,75 +204,45 @@ module dafx_core #(
   logic [AXI_DATA_WIDTH_P-1 : 0] led_2_counter;
 
   // -----------------------------------------------------------------------------
-  // Buttons
-  // -----------------------------------------------------------------------------
-  logic btn_0_tgl;
-  logic btn_1_tgl;
-  logic btn_2_tgl;
-
-  // -----------------------------------------------------------------------------
-  // Switches
-  // -----------------------------------------------------------------------------
-  logic switch_0;
-  logic switch_1;
-
-  // -----------------------------------------------------------------------------
   // AXI4 registers
   // -----------------------------------------------------------------------------
   logic [63 : 0] cr_led_0;
-  logic                          cmd_clear_irq_0;
+  logic          cmd_clear_irq_0;
 
   // -----------------------------------------------------------------------------
-  // AXI4 Write Arbiter
+  // AXI4 Arbiters
   // -----------------------------------------------------------------------------
 
   // Write Address Channel
   logic [0 : NR_OF_MASTERS_C-1]   [MC_ID_WIDTH_P-1 : 0] mst_awid;
   logic [0 : NR_OF_MASTERS_C-1] [MC_ADDR_WIDTH_P-1 : 0] mst_awaddr;
-  logic [0 : NR_OF_MASTERS_C-1]                  [7 : 0] mst_awlen;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_awvalid;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_awready;
+  logic [0 : NR_OF_MASTERS_C-1]                 [7 : 0] mst_awlen;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_awvalid;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_awready;
 
   // Write Data Channel
   logic [0 : NR_OF_MASTERS_C-1] [MC_DATA_WIDTH_P-1 : 0] mst_wdata;
-  logic [0 : NR_OF_MASTERS_C-1] [MC_DATA_WIDTH_P/8-1 : 0] mst_wstrb;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_wlast;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_wvalid;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_wready;
-
-
-  // AXI4 Read Arbiter
-
+  logic [0 : NR_OF_MASTERS_C-1] [MC_STRB_WIDTH_P-1 : 0] mst_wstrb;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_wlast;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_wvalid;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_wready;
 
   // Read Address Channel
   logic [0 : NR_OF_MASTERS_C-1]   [MC_ID_WIDTH_P-1 : 0] mst_arid;
   logic [0 : NR_OF_MASTERS_C-1] [MC_ADDR_WIDTH_P-1 : 0] mst_araddr;
-  logic [0 : NR_OF_MASTERS_C-1]                  [7 : 0] mst_arlen;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_arvalid;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_arready;
+  logic [0 : NR_OF_MASTERS_C-1]                 [7 : 0] mst_arlen;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_arvalid;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_arready;
 
   // Read Data Channel
   logic                           [MC_ID_WIDTH_P-1 : 0] mst_rid;
   logic                         [MC_DATA_WIDTH_P-1 : 0] mst_rdata;
-  logic                                                  mst_rlast;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_rvalid;
-  logic [0 : NR_OF_MASTERS_C-1]                          mst_rready;
-
+  logic                                                 mst_rlast;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_rvalid;
+  logic [0 : NR_OF_MASTERS_C-1]                         mst_rready;
 
 
   // I2S2 PMOD
-
-
-  logic [AUDIO_WIDTH_C-1 : 0] cs_adc_data;
-  logic                       cs_adc_ready;
-  logic                       cs_adc_valid;
-  logic                       cs_adc_last;
-
-  logic [AUDIO_WIDTH_C-1 : 0] cs_dac_data;
-  logic                       cs_dac_last;
-  logic                       cs_dac_valid;
-  logic                       cs_dac_ready;
-
   logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude;
   logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude;
   logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude;
@@ -283,8 +251,6 @@ module dafx_core #(
 
 
   // Mixer
-
-
   logic signed [NR_OF_CHANNELS_C-1 : 0] [AUDIO_WIDTH_C-1 : 0] mix_channel_data;
   logic                                                       mix_channel_valid;
   logic signed                          [AUDIO_WIDTH_C-1 : 0] mix_out_left;
@@ -355,7 +321,6 @@ module dafx_core #(
 
 
   // Mixer Clip LED
-
   always_ff @(posedge clk or negedge rst_n) begin : mixer_clip_p0
     if (!rst_n) begin
       led_1         <= '0;
@@ -386,7 +351,6 @@ module dafx_core #(
 
 
   // Mixer Ingress
-
   always_ff @(posedge clk or negedge rst_n) begin : mixer_ingress_p0
     if (!rst_n) begin
       mix_channel_data[0]      <= '0;
@@ -632,6 +596,59 @@ module dafx_core #(
   );
 
   // ---------------------------------------------------------------------------
+  // AXI4 Slave with PL registers
+  // ---------------------------------------------------------------------------
+  dafx_axi_slave #(
+    .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P          ),
+    .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P          ),
+    .AUDIO_WIDTH_C            ( AUDIO_WIDTH_C             ),
+    .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
+    .N_BITS_C                 ( N_BITS_C                  )
+  ) dafx_axi_slave_i0 (
+    .cif                      ( dafx_cfg_if.slave         ), // modport
+    .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
+    .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
+    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output
+    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1     ), // output
+    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2     ), // output
+    .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
+    .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
+    .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
+    .sr_cir_min_adc_amplitude ( -sr_cir_min_adc_amplitude ), // input
+    .sr_cir_max_adc_amplitude ( sr_cir_max_adc_amplitude  ), // input
+    .sr_cir_min_dac_amplitude ( -sr_cir_min_dac_amplitude ), // input
+    .sr_cir_max_dac_amplitude ( sr_cir_max_dac_amplitude  ), // input
+    .cmd_clear_adc_amplitude  ( cmd_cir_clear_max         ), // output
+    .cmd_clear_irq_0          ( cmd_clear_irq_0           ), // output
+    .cmd_clear_irq_1          (                           ), // output
+    .sr_mix_out_left          ( mix_out_left              ), // input
+    .sr_mix_out_right         ( mix_out_right             )  // input
+  );
+
+
+  // ---------------------------------------------------------------------------
+  // Oscillator
+  // ---------------------------------------------------------------------------
+  oscillator_system #(
+    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C           ),
+    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C             ),
+    .WAVE_WIDTH_P         ( WAVE_WIDTH_C                  ),
+    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C          ),
+    .N_BITS_P             ( N_BITS_C                      ),
+    .Q_BITS_P             ( Q_BITS_C                      ),
+    .AXI_DATA_WIDTH_P     ( N_BITS_C                      ),
+    .AXI_ID_WIDTH_P       ( 5                             ),
+    .AXI_ID_P             ( 0                             )
+  ) oscillator_system_i0 (
+    .clk                  ( clk                           ), // input
+    .rst_n                ( rst_n                         ), // input
+    .waveform             ( osc_waveform                  ), // output
+    .cr_waveform_select   ( cr_osc0_waveform_select       ), // input
+    .cr_frequency         ( cr_osc0_frequency << Q_BITS_C ), // input
+    .cr_duty_cycle        ( cr_osc0_duty_cycle            )  // input
+  );
+
+  // ---------------------------------------------------------------------------
   // AXI4 Write Arbiter
   // ---------------------------------------------------------------------------
   axi4_write_arbiter #(
@@ -757,134 +774,6 @@ module dafx_core #(
     .slv_rlast        ( mc_rlast         ), // input
     .slv_rvalid       ( mc_rvalid        ), // input
     .slv_rready       ( mc_rready        )  // output
-  );
-
-
-  // ---------------------------------------------------------------------------
-  // Cirrus CS5343 ADC, CS4344 DAC
-  // ---------------------------------------------------------------------------
-  cs5343_top cs5343_top_i0 (
-
-    // Clock and reset
-    .clk         ( clk          ), // input
-    .rst_n       ( rst_n        ), // input
-    .clk_mclk    ( clk_mclk     ), // input
-    .rst_mclk_n  ( rst_mclk_n   ), // input
-
-    // I/O Cirrus CS5343 (DAC)
-    .cs_tx_mclk  ( cs_tx_mclk   ), // output
-    .cs_tx_lrck  ( cs_tx_lrck   ), // output
-    .cs_tx_sclk  ( cs_tx_sclk   ), // output
-    .cs_tx_sdout ( cs_tx_sdout  ), // output
-
-    // I/O Cirrus CS4344 (ADC)
-    .cs_rx_mclk  ( cs_rx_mclk   ), // output
-    .cs_rx_lrck  ( cs_rx_lrck   ), // output
-    .cs_rx_sclk  ( cs_rx_sclk   ), // output
-    .cs_rx_sdin  ( cs_rx_sdin   ), // input
-
-    // AXI-S ADC
-    .adc_data    ( cs_adc_data  ), // output
-    .adc_valid   ( cs_adc_valid ), // output
-    .adc_ready   ( cs_adc_ready ), // input
-    .adc_last    ( cs_adc_last  ), // output
-
-    // AXI-S DAC
-    .dac_data    ( cs_dac_data  ), // input
-    .dac_valid   ( cs_dac_valid ), // input
-    .dac_ready   ( cs_dac_ready ), // output
-    .dac_last    ( cs_dac_last  )  // input
-  );
-
-  // ---------------------------------------------------------------------------
-  // Wrapper for mechanical buttons
-  // ---------------------------------------------------------------------------
-  arty_z7_buttons_top arty_z7_buttons_top_i0 (
-    .clk       ( clk       ), // input
-    .rst_n     ( rst_n     ), // input
-    .btn_0     ( btn_0     ), // input
-    .btn_1     ( btn_1     ), // input
-    .btn_2     ( btn_2     ), // input
-    .btn_3     (           ), // input
-    .btn_0_tgl ( btn_0_tgl ), // output
-    .btn_1_tgl ( btn_1_tgl ), // output
-    .btn_2_tgl ( btn_2_tgl ), // output
-    .btn_3_tgl (           )  // output
-  );
-
-  // ---------------------------------------------------------------------------
-  // Synchronizing Switch 0
-  // ---------------------------------------------------------------------------
-  io_synchronizer io_synchronizer_i0 (
-    .clk         ( clk      ),
-    .rst_n       ( rst_n    ),
-    .bit_ingress ( sw_0     ),
-    .bit_egress  ( switch_0 )
-  );
-
-
-  // ---------------------------------------------------------------------------
-  // Synchronizing Switch 1
-  // ---------------------------------------------------------------------------
-  io_synchronizer io_synchronizer_i1 (
-    .clk         ( clk      ),
-    .rst_n       ( rst_n    ),
-    .bit_ingress ( sw_1     ),
-    .bit_egress  ( switch_1 )
-  );
-
-
-  // ---------------------------------------------------------------------------
-  // AXI4 Slave with PL registers
-  // ---------------------------------------------------------------------------
-  dafx_axi_slave #(
-    .AXI_DATA_WIDTH_P         ( AXI_DATA_WIDTH_P          ),
-    .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P          ),
-    .AUDIO_WIDTH_C            ( AUDIO_WIDTH_C             ),
-    .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
-    .N_BITS_C                 ( N_BITS_C                  )
-  ) dafx_axi_slave_i0 (
-    .cif                      ( dafx_cfg_if.slave         ), // modport
-    .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
-    .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
-    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output
-    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1     ), // output
-    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2     ), // output
-    .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
-    .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
-    .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
-    .sr_cir_min_adc_amplitude ( -sr_cir_min_adc_amplitude ), // input
-    .sr_cir_max_adc_amplitude ( sr_cir_max_adc_amplitude  ), // input
-    .sr_cir_min_dac_amplitude ( -sr_cir_min_dac_amplitude ), // input
-    .sr_cir_max_dac_amplitude ( sr_cir_max_dac_amplitude  ), // input
-    .cmd_clear_adc_amplitude  ( cmd_cir_clear_max         ), // output
-    .cmd_clear_irq_0          ( cmd_clear_irq_0           ), // output
-    .cmd_clear_irq_1          (                           ), // output
-    .sr_mix_out_left          ( mix_out_left              ), // input
-    .sr_mix_out_right         ( mix_out_right             )  // input
-  );
-
-
-  // ---------------------------------------------------------------------------
-  // Oscillator
-  // ---------------------------------------------------------------------------
-  oscillator_system #(
-    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C           ),
-    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C             ),
-    .WAVE_WIDTH_P         ( WAVE_WIDTH_C                  ),
-    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C          ),
-    .N_BITS_P             ( N_BITS_C                      ),
-    .Q_BITS_P             ( Q_BITS_C                      ),
-    .AXI_DATA_WIDTH_P     ( AXI_DATA_WIDTH_C              ),
-    .AXI_ID_WIDTH_P       ( AXI_ID_WIDTH_C                ),
-    .AXI_ID_P             ( AXI_ID_C                      )
-  ) oscillator_system_i0 (
-    .clk                  ( clk                           ), // input
-    .rst_n                ( rst_n                         ), // input
-    .waveform             ( osc_waveform                  ), // output
-    .cr_waveform_select   ( cr_osc0_waveform_select       ), // input
-    .cr_frequency         ( cr_osc0_frequency << Q_BITS_C ), // input
-    .cr_duty_cycle        ( cr_osc0_duty_cycle            )  // input
   );
 
   // ---------------------------------------------------------------------------

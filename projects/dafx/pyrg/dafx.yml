@@ -1,7 +1,7 @@
 ---
 dafx:
 
-  bus_width: 32
+  bus_width: 64
 
   parameters:
     - GAIN_WIDTH_C

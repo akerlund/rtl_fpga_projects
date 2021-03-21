@@ -28,6 +28,7 @@ class dafx_env extends uvm_env;
   protected virtual clk_rst_if vif;
 
   clk_rst_agent                    clk_rst_agent0;
+  clk_rst_agent                    clk_rst_agent1;
   vip_axi4_agent  #(VIP_MEM_CFG_C) mem_agent0;
   vip_axi4_agent  #(VIP_REG_CFG_C) reg_agent0;
   vip_axi4s_agent #(VIP_CIR_CFG_C) cir_agent0;
@@ -61,14 +62,16 @@ class dafx_env extends uvm_env;
 
     // Create Agents
     clk_rst_agent0 = clk_rst_agent::type_id::create("clk_rst_agent0", this);
+    clk_rst_agent1 = clk_rst_agent::type_id::create("clk_rst_agent1", this);
     mem_agent0     = vip_axi4_agent  #(VIP_MEM_CFG_C)::type_id::create("mem_agent0", this);
     reg_agent0     = vip_axi4_agent  #(VIP_REG_CFG_C)::type_id::create("reg_agent0",  this);
     cir_agent0     = vip_axi4s_agent #(VIP_CIR_CFG_C)::type_id::create("cir_agent0",  this);
 
     uvm_config_db #(int)::set(this, {"clk_rst_agent0", "*"}, "id", 0);
-    uvm_config_db #(int)::set(this, {"mem_agent0",     "*"}, "id", 1);
-    uvm_config_db #(int)::set(this, {"reg_agent0",     "*"}, "id", 2);
-    uvm_config_db #(int)::set(this, {"cir_agent0",     "*"}, "id", 3);
+    uvm_config_db #(int)::set(this, {"clk_rst_agent1", "*"}, "id", 1);
+    uvm_config_db #(int)::set(this, {"mem_agent0",     "*"}, "id", 2);
+    uvm_config_db #(int)::set(this, {"reg_agent0",     "*"}, "id", 3);
+    uvm_config_db #(int)::set(this, {"cir_agent0",     "*"}, "id", 4);
 
     // Create Scoreboards
     //scoreboard0 = dafx_scoreboard::type_id::create("scoreboard0", this);

@@ -20,11 +20,11 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-class tc_axi4_dafx extends dafx_base_test;
+class tc_dafx extends dafx_base_test;
 
-  `uvm_component_utils(tc_axi4_dafx)
+  `uvm_component_utils(tc_dafx)
 
-  function new(string name = "tc_axi4_dafx", uvm_component parent = null);
+  function new(string name = "tc_dafx", uvm_component parent = null);
     super.new(name, parent);
   endfunction
 
@@ -38,6 +38,8 @@ class tc_axi4_dafx extends dafx_base_test;
 
     super.run_phase(phase);
     phase.raise_objection(this);
+
+    clk_delay(10000);
 
     `uvm_info(get_name(), $sformatf("Done!"), UVM_LOW)
     phase.drop_objection(this);

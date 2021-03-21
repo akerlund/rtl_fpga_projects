@@ -156,6 +156,109 @@ module dafx_top #(
   logic clk_mclk;
   logic rst_mclk_n;
 
+  logic btn_0_tgl;
+  logic btn_1_tgl;
+  logic btn_2_tgl;
+
+  logic switch_0;
+  logic switch_1;
+
+  // I2S2 PMOD
+  logic [23 : 0] cs_adc_data;
+  logic          cs_adc_ready;
+  logic          cs_adc_valid;
+  logic          cs_adc_last;
+
+  logic [23 : 0] cs_dac_data;
+  logic          cs_dac_last;
+  logic          cs_dac_valid;
+  logic          cs_dac_ready;
+
+  // -------------------------------------------------------------------------
+  // PLL for the Cirrus ICs
+  // -------------------------------------------------------------------------
+  car_cs5343 car_cs5343_i0 (
+    .clk        ( clk        ), // input
+    .rst_n      ( rst_n      ), // input
+    .clk_mclk   ( clk_mclk   ), // output
+    .rst_mclk_n ( rst_mclk_n )  // output
+  );
+
+  // ---------------------------------------------------------------------------
+  // Cirrus CS5343 ADC, CS4344 DAC
+  // ---------------------------------------------------------------------------
+  cs5343_top cs5343_top_i0 (
+
+    // Clock and reset
+    .clk         ( clk          ), // input
+    .rst_n       ( rst_n        ), // input
+    .clk_mclk    ( clk_mclk     ), // input
+    .rst_mclk_n  ( rst_mclk_n   ), // input
+
+    // I/O Cirrus CS5343 (DAC)
+    .cs_tx_mclk  ( cs_tx_mclk   ), // output
+    .cs_tx_lrck  ( cs_tx_lrck   ), // output
+    .cs_tx_sclk  ( cs_tx_sclk   ), // output
+    .cs_tx_sdout ( cs_tx_sdout  ), // output
+
+    // I/O Cirrus CS4344 (ADC)
+    .cs_rx_mclk  ( cs_rx_mclk   ), // output
+    .cs_rx_lrck  ( cs_rx_lrck   ), // output
+    .cs_rx_sclk  ( cs_rx_sclk   ), // output
+    .cs_rx_sdin  ( cs_rx_sdin   ), // input
+
+    // AXI-S ADC
+    .adc_data    ( cs_adc_data  ), // output
+    .adc_valid   ( cs_adc_valid ), // output
+    .adc_ready   ( cs_adc_ready ), // input
+    .adc_last    ( cs_adc_last  ), // output
+
+    // AXI-S DAC
+    .dac_data    ( cs_dac_data  ), // input
+    .dac_valid   ( cs_dac_valid ), // input
+    .dac_ready   ( cs_dac_ready ), // output
+    .dac_last    ( cs_dac_last  )  // input
+  );
+
+  // ---------------------------------------------------------------------------
+  // Wrapper for mechanical buttons
+  // ---------------------------------------------------------------------------
+  arty_z7_buttons_top arty_z7_buttons_top_i0 (
+    .clk       ( clk       ), // input
+    .rst_n     ( rst_n     ), // input
+    .btn_0     ( btn_0     ), // input
+    .btn_1     ( btn_1     ), // input
+    .btn_2     ( btn_2     ), // input
+    .btn_3     (           ), // input
+    .btn_0_tgl ( btn_0_tgl ), // output
+    .btn_1_tgl ( btn_1_tgl ), // output
+    .btn_2_tgl ( btn_2_tgl ), // output
+    .btn_3_tgl (           )  // output
+  );
+
+  // ---------------------------------------------------------------------------
+  // Synchronizing Switch 0
+  // ---------------------------------------------------------------------------
+  io_synchronizer io_synchronizer_i0 (
+    .clk         ( clk      ),
+    .rst_n       ( rst_n    ),
+    .bit_ingress ( sw_0     ),
+    .bit_egress  ( switch_0 )
+  );
+
+  // ---------------------------------------------------------------------------
+  // Synchronizing Switch 1
+  // ---------------------------------------------------------------------------
+  io_synchronizer io_synchronizer_i1 (
+    .clk         ( clk      ),
+    .rst_n       ( rst_n    ),
+    .bit_ingress ( sw_1     ),
+    .bit_egress  ( switch_1 )
+  );
+
+  // ---------------------------------------------------------------------------
+  // Core
+  // ---------------------------------------------------------------------------
   dafx_core #(
     .MC_ID_WIDTH_P    ( 6                  ),
     .MC_ADDR_WIDTH_P  ( 32                 ),
@@ -171,16 +274,24 @@ module dafx_top #(
     .rst_n            ( rst_n              ), // input
     .clk_mclk         ( clk_mclk           ), // input
     .rst_mclk_n       ( rst_mclk_n         ), // input
+    .cs_adc_data      ( cs_adc_data        ), // input
+    .cs_adc_valid     ( cs_adc_valid       ), // input
+    .cs_adc_ready     ( cs_adc_ready       ), // output
+    .cs_adc_last      ( cs_adc_last        ), // input
+    .cs_dac_data      ( cs_dac_data        ), // output
+    .cs_dac_valid     ( cs_dac_valid       ), // output
+    .cs_dac_ready     ( cs_dac_ready       ), // input
+    .cs_dac_last      ( cs_dac_last        ), // output
     .led_0            ( led_0              ), // output
     .led_1            ( led_1              ), // output
     .led_2            ( led_2              ), // output
     .led_3            ( led_3              ), // output
-    .btn_0            ( btn_0              ), // input
-    .btn_1            ( btn_1              ), // input
-    .btn_2            ( btn_2              ), // input
-    .btn_3            ( btn_3              ), // input
-    .sw_0             ( sw_0               ), // input
-    .sw_1             ( sw_1               ), // input
+    .btn_0            ( btn_0_tgl          ), // input
+    .btn_1            ( btn_1_tgl          ), // input
+    .btn_2            ( btn_2_tgl          ), // input
+    .btn_3            ( '0                 ), // input
+    .sw_0             ( switch_0           ), // input
+    .sw_1             ( switch_1           ), // input
     .irq_0            ( irq_0              ), // output
     .irq_1            ( irq_1              ), // output
     .cfg_awaddr       ( cfg_awaddr         ), // input
@@ -235,84 +346,8 @@ module dafx_top #(
     .mc_rdata         ( mc_rdata           ), // input
     .mc_rlast         ( mc_rlast           ), // input
     .mc_rvalid        ( mc_rvalid          ), // input
-    .mc_rready        ( mc_rready          ), // output
-    .cs_tx_mclk       ( cs_tx_mclk         ), // output
-    .cs_tx_lrck       ( cs_tx_lrck         ), // output
-    .cs_tx_sclk       ( cs_tx_sclk         ), // output
-    .cs_tx_sdout      ( cs_tx_sdout        ), // output
-    .cs_rx_mclk       ( cs_rx_mclk         ), // output
-    .cs_rx_lrck       ( cs_rx_lrck         ), // output
-    .cs_rx_sclk       ( cs_rx_sclk         ), // output
-    .cs_rx_sdin       ( cs_rx_sdin         )  // input
+    .mc_rready        ( mc_rready          )  // output
   );
-
-  // -------------------------------------------------------------------------
-  // PLL for the Cirrus ICs
-  // -------------------------------------------------------------------------
-  car_cs5343 car_cs5343_i0 (
-    .clk        ( clk        ), // input
-    .rst_n      ( rst_n      ), // input
-    .clk_mclk   ( clk_mclk   ), // output
-    .rst_mclk_n ( rst_mclk_n )  // output
-  );
-
-  // always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
-
-  //   if (!rst_n) begin
-
-  //     led_3         <= '0;
-  //     led_3_counter <= '0;
-
-  //   end
-  //   else begin
-
-  //     if (led_3_counter == 62500000-1) begin
-  //       led_3         <= ~led_3;
-  //       led_3_counter <= 0;
-  //     end
-  //     else begin
-  //       led_3_counter <= led_3_counter + 1;
-  //     end
-
-  //   end
-  // end
-
-  // // ---------------------------------------------------------------------------
-  // // Wrapper for mechanical buttons
-  // // ---------------------------------------------------------------------------
-  // arty_z7_buttons_top arty_z7_buttons_top_i0 (
-  //   .clk       ( clk       ), // input
-  //   .rst_n     ( rst_n     ), // input
-  //   .btn_0     ( btn_0     ), // input
-  //   .btn_1     ( btn_1     ), // input
-  //   .btn_2     ( btn_2     ), // input
-  //   .btn_3     (           ), // input
-  //   .btn_0_tgl ( btn_0_tgl ), // output
-  //   .btn_1_tgl ( btn_1_tgl ), // output
-  //   .btn_2_tgl ( btn_2_tgl ), // output
-  //   .btn_3_tgl (           )  // output
-  // );
-
-  // // ---------------------------------------------------------------------------
-  // // Synchronizing Switch 0
-  // // ---------------------------------------------------------------------------
-  // io_synchronizer io_synchronizer_i0 (
-  //   .clk         ( clk      ),
-  //   .rst_n       ( rst_n    ),
-  //   .bit_ingress ( sw_0     ),
-  //   .bit_egress  ( switch_0 )
-  // );
-
-
-  // // ---------------------------------------------------------------------------
-  // // Synchronizing Switch 1
-  // // ---------------------------------------------------------------------------
-  // io_synchronizer io_synchronizer_i1 (
-  //   .clk         ( clk      ),
-  //   .rst_n       ( rst_n    ),
-  //   .bit_ingress ( sw_1     ),
-  //   .bit_egress  ( switch_1 )
-  // );
 
 endmodule
 

@@ -47,6 +47,7 @@ class dafx_base_test extends uvm_test;
   // ---------------------------------------------------------------------------
 
   clk_rst_config  clk_rst_config0;
+  clk_rst_config  clk_rst_config1;
   vip_axi4_config axi4_mem_cfg0;
 
   // ---------------------------------------------------------------------------
@@ -79,6 +80,7 @@ class dafx_base_test extends uvm_test;
 
     // Configurations
     clk_rst_config0 = clk_rst_config::type_id::create("clk_rst_config0", this);
+    clk_rst_config1 = clk_rst_config::type_id::create("clk_rst_config1", this);
     axi4_mem_cfg0   = vip_axi4_config::type_id::create("axi4_mem_cfg0",  this);
 
     axi4_mem_cfg0.vip_axi4_agent_type     = VIP_AXI4_SLAVE_AGENT_E;
@@ -86,7 +88,11 @@ class dafx_base_test extends uvm_test;
     axi4_mem_cfg0.max_wready_delay_period = 8;
     axi4_mem_cfg0.max_rready_delay_period = 8;
 
+    clk_rst_config0.clock_period = 8;
+    clk_rst_config1.clock_period = 44;
+
     uvm_config_db #(clk_rst_config)::set(this,  {"tb_env.clk_rst_agent0", "*"}, "cfg", clk_rst_config0);
+    uvm_config_db #(clk_rst_config)::set(this,  {"tb_env.clk_rst_agent1", "*"}, "cfg", clk_rst_config1);
     uvm_config_db #(vip_axi4_config)::set(this, {"tb_env.mem_agent0",     "*"}, "cfg", axi4_mem_cfg0);
 
   endfunction
