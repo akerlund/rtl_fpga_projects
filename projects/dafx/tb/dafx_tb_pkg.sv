@@ -30,6 +30,7 @@ package dafx_tb_pkg;
 
   import clk_rst_types_pkg::*;
   import clk_rst_pkg::*;
+  import vip_fixed_point_pkg::*;
   import vip_axi4_types_pkg::*;
   import vip_axi4_agent_pkg::*;
   import vip_axi4s_types_pkg::*;
@@ -68,6 +69,8 @@ package dafx_tb_pkg;
     VIP_AXI4S_TUSER_WIDTH_P : 0
   };
 
+  localparam vip_axi4s_cfg_t VIP_AXI4S_CFG_C = VIP_CIR_CFG_C;
+
   // Register model
   `include "dafx_reg.sv"
   `include "dafx_block.sv"
@@ -78,6 +81,9 @@ package dafx_tb_pkg;
   //`include "dafx_scoreboard.sv"
   `include "dafx_virtual_sequencer.sv"
   `include "dafx_env.sv"
+
+  `include "vip_axi4s_seq_lib.sv"
+  `include "dafx_seq_lib.sv"
 
 
 endpackage

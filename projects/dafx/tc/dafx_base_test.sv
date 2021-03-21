@@ -54,7 +54,8 @@ class dafx_base_test extends uvm_test;
   // Sequences
   // ---------------------------------------------------------------------------
 
-  reset_sequence        reset_seq0;
+  reset_sequence     reset_seq0;
+  cir_send_audio_seq cir_send_audio_seq0;
 
   function new(string name = "dafx_base_test", uvm_component parent = null);
     super.new(name, parent);
@@ -116,7 +117,8 @@ class dafx_base_test extends uvm_test;
 
   function void start_of_simulation_phase(uvm_phase phase);
     super.start_of_simulation_phase(phase);
-    reset_seq0 = reset_sequence::type_id::create("reset_seq0");
+    reset_seq0          = reset_sequence::type_id::create("reset_seq0");
+    cir_send_audio_seq0 = cir_send_audio_seq::type_id::create("cir_send_audio_seq0");
   endfunction
 
 

@@ -32,6 +32,7 @@ source $git_sub_root/submodules/rtl_common_design/modules/oscillator/rtl/rtl_fil
 
 git_root="$(git rev-parse --show-toplevel)/submodules/VIP"
 source $git_sub_root/submodules/VIP/bool/files.lst
+source $git_sub_root/submodules/VIP/vip_fixed_point/files.lst
 source $git_sub_root/submodules/VIP/vip_axi4_agent/files.lst
 source $git_sub_root/submodules/VIP/vip_axi4s_agent/files.lst
 source $git_sub_root/submodules/VIP/vip_clk_rst_agent/files.lst

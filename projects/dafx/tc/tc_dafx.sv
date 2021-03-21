@@ -39,7 +39,18 @@ class tc_dafx extends dafx_base_test;
     super.run_phase(phase);
     phase.raise_objection(this);
 
-    clk_delay(10000);
+    cir_send_audio_seq0.f  = 441.0;
+    cir_send_audio_seq0.fs = 44100.0;
+    cir_send_audio_seq0.clock_period = clk_rst_config0.clock_period;
+    cir_send_audio_seq0.set_data_type(VIP_AXI4S_TDATA_COUNTER_E);
+    cir_send_audio_seq0.set_burst_length(16);
+    cir_send_audio_seq0.set_tstrb(VIP_AXI4S_TSTRB_ALL_E);
+
+    fork
+      cir_send_audio_seq0.start(v_sqr.cir_sequencer);
+    join_none
+
+    clk_delay(1000000);
 
     `uvm_info(get_name(), $sformatf("Done!"), UVM_LOW)
     phase.drop_objection(this);

@@ -32,6 +32,8 @@ package dafx_tc_pkg;
   import report_server_pkg::*;
   import vip_axi4_types_pkg::*;
   import vip_axi4_agent_pkg::*;
+  import vip_axi4s_types_pkg::*;
+  import vip_axi4s_agent_pkg::*;
   import clk_rst_types_pkg::*;
   import clk_rst_pkg::*;
 
