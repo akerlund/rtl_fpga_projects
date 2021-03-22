@@ -67,56 +67,59 @@ module dafx_tb_top;
   initial begin
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env*",                "vif", clk_rst_vif0);
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env.clk_rst_agent0*", "vif", clk_rst_vif0);
-    uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get() :set(uvm_root::get(), "uvm_test_top.tb_env.mem_agent0*",     "vif", mem_vif);
+    uvm_config_db #(virtual vip_axi4_if  #(VIP_MEM_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.mem_agent0*",     "vif", mem_vif);
     uvm_config_db #(virtual vip_axi4_if  #(VIP_REG_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.reg_agent0*",     "vif", reg_vif);
     uvm_config_db #(virtual vip_axi4s_if #(VIP_CIR_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.cir_agent0*",     "vif", cir_vif);
     run_test();
     $stop();
   end
 
-  dafx_core
-  //#(
-  //  .AXI_ID_WIDTH_P   ( 32                 ),
-  //  .AXI_ADDR_WIDTH_P ( 7                  ),
-  //  .AXI_DATA_WIDTH_P ( 32                 ),
-  //  .AXI_STRB_WIDTH_P ( AXI_DATA_WIDTH_P/8 )
-  //)
-  dafx_core_i0 (
+  dafx_core #(
+    .MC_ID_WIDTH_P    ( 6                  ),
+    .MC_ADDR_WIDTH_P  ( 32                 ),
+    .MC_DATA_WIDTH_P  ( 128                ),
+    .CFG_ID_WIDTH_P   ( 16                 ),
+    .CFG_ADDR_WIDTH_P ( 16                 ),
+    .CFG_DATA_WIDTH_P ( 64                 ),
+    .AXI_ID_WIDTH_P   ( 32                 ),
+    .AXI_ADDR_WIDTH_P ( 7                  ),
+    .AXI_DATA_WIDTH_P ( 32                 )
+  ) dafx_core_i0 (
 
     // Clock and reset
-    .clk          ( clk_rst_vif0.clk   ), // input
-    .rst_n        ( clk_rst_vif0.rst_n ), // input
-    .clk_mclk     ( clk_rst_vif1.clk   ), // input
-    .rst_mclk_n   ( clk_rst_vif0.rst_n ), // input
-    .dafx_cfg_if  ( dafx_cfg_if.slave  ), // interface
+    .clk              ( clk_rst_vif0.clk   ), // input
+    .rst_n            ( clk_rst_vif0.rst_n ), // input
+    .clk_mclk         ( clk_rst_vif1.clk   ), // input
+    .rst_mclk_n       ( clk_rst_vif0.rst_n ), // input
+    .dafx_cfg_if      ( dafx_cfg_if.slave  ), // interface
 
-    .cs_adc_data  ( cir_vif.tdata      ), // input
-    .cs_adc_valid ( cir_vif.tvalid     ), // input
-    .cs_adc_ready ( cir_vif.tready     ), // output
-    .cs_adc_last  ( cir_vif.tlast      ), // input
-    .cs_dac_data  (                    ), // output
-    .cs_dac_valid (                    ), // output
-    .cs_dac_ready ( '1                 ), // input
-    .cs_dac_last  (                    ), // output
+    .cs_adc_data      ( cir_vif.tdata      ), // input
+    .cs_adc_valid     ( cir_vif.tvalid     ), // input
+    .cs_adc_ready     ( cir_vif.tready     ), // output
+    .cs_adc_last      ( cir_vif.tlast      ), // input
+    .cs_dac_data      (                    ), // output
+    .cs_dac_valid     (                    ), // output
+    .cs_dac_ready     ( '1                 ), // input
+    .cs_dac_last      (                    ), // output
 
     // Arty Z7 LEDS
-    .led_0        (                    ), // output
-    .led_1        (                    ), // output
-    .led_2        (                    ), // output
+    .led_0            (                    ), // output
+    .led_1            (                    ), // output
+    .led_2            (                    ), // output
 
     // Arty Z7 buttons
-    .btn_0        ('0                  ), // input
-    .btn_1        ('0                  ), // input
-    .btn_2        ('0                  ), // input
-    .btn_3        ('0                  ), // input
+    .btn_0            ( '0                 ), // input
+    .btn_1            ( '0                 ), // input
+    .btn_2            ( '0                 ), // input
+    .btn_3            ( '0                 ), // input
 
     // Arty Z7 switches
-    .sw_0         ( '0                 ), // input
-    .sw_1         ( '0                 ), // input
+    .sw_0             ( '0                 ), // input
+    .sw_1             ( '0                 ), // input
 
     // IRQ
-    .irq_0        (                    ), // output
-    .irq_1        (                    )  // output
+    .irq_0            (                    ), // output
+    .irq_1            (                    )  // output
   );
 
   initial begin
