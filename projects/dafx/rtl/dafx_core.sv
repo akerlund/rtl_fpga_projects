@@ -31,7 +31,7 @@ module dafx_core #(
     parameter int CFG_ID_WIDTH_P   = 16,
     parameter int CFG_ADDR_WIDTH_P = 16,
     parameter int CFG_DATA_WIDTH_P = 64,
-    parameter int CFG_STRB_WIDTH_P = 64,
+    parameter int CFG_STRB_WIDTH_P = CFG_DATA_WIDTH_P/8,
     parameter int AXI_ID_WIDTH_P   = 32,
     parameter int AXI_ADDR_WIDTH_P = 7,
     parameter int AXI_DATA_WIDTH_P = 32,
@@ -43,6 +43,7 @@ module dafx_core #(
     input  wire                                   rst_n,
     input  wire                                   clk_mclk,
     input  wire                                   rst_mclk_n,
+    axi4_reg_if.slave                             dafx_cfg_if,
 
     // Cirrus CS5343 ADC/DAC
     input  wire                          [23 : 0] cs_adc_data,
@@ -62,7 +63,6 @@ module dafx_core #(
     output logic                                  led_0,
     output logic                                  led_1,
     output logic                                  led_2,
-    output logic                                  led_3,
 
     // Arty Z7 buttons
     input  wire                                   btn_0,
@@ -183,14 +183,6 @@ module dafx_core #(
   localparam int N_BITS_C             = 32;
   localparam int Q_BITS_C             = 11;
 
-  axi4_reg_if  #(
-    .AXI4_ID_WIDTH_P   ( CFG_ID_WIDTH_P   ),
-    .AXI4_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P ),
-    .AXI4_DATA_WIDTH_P ( CFG_DATA_WIDTH_P ),
-    .AXI4_STRB_WIDTH_P ( CFG_STRB_WIDTH_P )
-  ) dafx_cfg_if (clk, rst_n);
-
-
   // -----------------------------------------------------------------------------
   // IRQ
   // -----------------------------------------------------------------------------
@@ -200,7 +192,6 @@ module dafx_core #(
   // -----------------------------------------------------------------------------
   // Toggling LED
   // -----------------------------------------------------------------------------
-  logic [AXI_DATA_WIDTH_P-1 : 0] led_3_counter;
   logic [AXI_DATA_WIDTH_P-1 : 0] led_2_counter;
 
   // -----------------------------------------------------------------------------
@@ -274,40 +265,6 @@ module dafx_core #(
   assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0 << Q_BITS_C;
   assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1 << Q_BITS_C;
   assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2 << Q_BITS_C;
-
-  //----------------------------------------------------------------------------
-  // Register
-  //----------------------------------------------------------------------------
-
-  // Write Address Channel
-  assign dafx_cfg_if.awaddr  = cfg_awaddr;
-  assign dafx_cfg_if.awvalid = cfg_awvalid;
-  assign cfg_awready = dafx_cfg_if.awready;
-
-  // Write Data Channel
-  assign dafx_cfg_if.wdata   = cfg_wdata;
-  assign dafx_cfg_if.wstrb   = cfg_wstrb;
-  assign dafx_cfg_if.wlast   = cfg_wlast;
-  assign dafx_cfg_if.wvalid  = cfg_wvalid;
-  assign cfg_wready  = dafx_cfg_if.wready;
-
-  // Write Response Channel
-  assign cfg_bresp   = dafx_cfg_if.bresp;
-  assign cfg_bvalid  = dafx_cfg_if.bvalid;
-  assign dafx_cfg_if.bready  = cfg_bready;
-
-  // Read Address Channel
-  assign dafx_cfg_if.araddr  = cfg_araddr;
-  assign dafx_cfg_if.arlen   = cfg_arlen;
-  assign dafx_cfg_if.arvalid = cfg_arvalid;
-  assign cfg_arready = dafx_cfg_if.arready;
-
-  // Read Data Channel
-  assign cfg_rdata   = dafx_cfg_if.rdata;
-  assign cfg_rresp   = dafx_cfg_if.rresp;
-  assign cfg_rlast   = dafx_cfg_if.rlast;
-  assign cfg_rvalid  = dafx_cfg_if.rvalid;
-  assign dafx_cfg_if.rready  = cfg_rready;
 
 
   // Oscillator
@@ -405,8 +362,6 @@ module dafx_core #(
         end
 
       end
-
-
     end
   end
 
@@ -420,10 +375,8 @@ module dafx_core #(
 
 
   // Mixer Egress
-
   always_ff @(posedge clk or negedge rst_n) begin : mixer_egress_p0
     if (!rst_n) begin
-
       mix_egr_state    <= MIX_WAIT_VALID;
       mix_out_ready    <= '1;
       mix_out_right_r0 <= '0;
@@ -436,7 +389,6 @@ module dafx_core #(
       case (mix_egr_state)
 
         MIX_WAIT_VALID: begin
-
           if (mix_out_valid) begin
             mix_egr_state    <= MIX_SEND_FIRST;
             mix_out_right_r0 <= mix_out_right;
@@ -447,7 +399,6 @@ module dafx_core #(
         end
 
         MIX_SEND_FIRST: begin
-
           if (cs_dac_ready) begin
             mix_egr_state <= MIX_SEND_LAST;
             cs_dac_data   <= mix_out_right_r0;
@@ -457,7 +408,6 @@ module dafx_core #(
         end
 
         MIX_SEND_LAST: begin
-
           if (cs_dac_ready) begin
             mix_egr_state <= MIX_WAIT_VALID;
             cs_dac_valid  <= '0;
@@ -465,26 +415,18 @@ module dafx_core #(
         end
 
       endcase
-
     end
   end
 
 
 
   // IRQ 0
-
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
-
     if (!rst_n) begin
-
       irq_0         <= '0;
       irq_0_counter <= '0;
-
-    end
-    else begin
-
+    end else begin
       irq_0 <= '0;
-
       /*if (cmd_clear_irq_0) begin
         irq_0_counter <= '0;
         irq_0         <= '0;
@@ -496,84 +438,37 @@ module dafx_core #(
       else begin
         irq_0_counter <= irq_0_counter + 1;
       end
-
     end
   end
 
 
-
   // IRQ 1
-
   always_ff @(posedge clk or negedge rst_n) begin : interrupt_p1
-
     if (!rst_n) begin
-
       irq_1         <= '0;
       irq_1_counter <= '0;
-
-    end
-    else begin
-
+    end else begin
       irq_1 <= '0;
-
       /*if (cmd_clear_irq_0) begin
         irq_1_counter <= '0;
         irq_1         <= '0;
       end
-      else*/ if (irq_1_counter == SAMPLING_IRQ_COUNTER_C-1) begin
+      else*/
+      if (irq_1_counter == SAMPLING_IRQ_COUNTER_C-1) begin
         irq_1         <= '1;
         irq_1_counter <= '0;
-      end
-      else begin
+      end else begin
         irq_1_counter <= irq_1_counter + 1;
       end
-
-    end
-  end
-
-  /*
-  always_ff @(posedge clk or negedge rst_n) begin : axi_read_irq
-    if (!rst_n) begin
-      irq_1 <= '0;
-      led_0 <= '0;
-    end
-    else begin
-      irq_1 <= '0;
-      if (btn_0_tgl) begin
-        led_0 <= ~led_0;
-        irq_1 <= '1;
-      end
-    end
-  end
-  */
-
-
-  // Clock 'clk_sys' (125MHz) with LED process
-
-  always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
-
-    if (!rst_n) begin
-
-      led_3         <= '0;
-      led_3_counter <= '0;
-
-    end
-    else begin
-
-      if (led_3_counter == 62500000-1) begin
-        led_3         <= ~led_3;
-        led_3_counter <= 0;
-      end
-      else begin
-        led_3_counter <= led_3_counter + 1;
-      end
-
     end
   end
 
 
+
+
+  // ---------------------------------------------------------------------------
   // Audio Mixer
-
+  // ---------------------------------------------------------------------------
   mixer #(
     .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C                   ),
     .GAIN_WIDTH_P        ( GAIN_WIDTH_C                    ),
@@ -605,7 +500,7 @@ module dafx_core #(
     .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
     .N_BITS_C                 ( N_BITS_C                  )
   ) dafx_axi_slave_i0 (
-    .cif                      ( dafx_cfg_if.slave         ), // modport
+    .cif                      ( dafx_cfg_if               ), // modport
     .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
     .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
     .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output
@@ -775,53 +670,6 @@ module dafx_core #(
     .slv_rvalid       ( mc_rvalid        ), // input
     .slv_rready       ( mc_rready        )  // output
   );
-
-  // ---------------------------------------------------------------------------
-  // Recorder (and Playback)
-  // ---------------------------------------------------------------------------
-/*
-  recorder #(
-    .AXI_ID_P              ( 420                   ),
-    .AXI_ID_WIDTH_P        ( AXI_ID_WIDTH_P        ),
-    .AXI_ADDR_WIDTH_P      ( AXI_ADDR_WIDTH_P      ),
-    .AXI_DATA_WIDTH_P      ( AXI_DATA_WIDTH_P      ),
-    .AXI_STRB_WIDTH_P      ( AXI_STRB_WIDTH_P      ),
-    .RECORD_BIT_WIDTH_P    ( RECORD_BIT_WIDTH_P    ),
-    .MEMORY_BASE_ADDRESS_P ( MEMORY_BASE_ADDRESS_P ),
-    .MEMORY_HIGH_ADDRESS_P ( MEMORY_HIGH_ADDRESS_P )
-  ) recorder_i0 (
-    .clk                   ( clk                   ), // input
-    .rst_n                 ( rst_n                 ), // input
-    .ing_tdata             ( vc_adc_data           ), // input
-    .ing_tvalid            ( vc_adc_valid          ), // input
-    .ing_tready            ( ),//vc_adc_ready      ), // output
-    .egr_tdata             ( vc_dac_data           ), // output
-    .egr_tvalid            ( vc_dac_valid          ), // output
-    .egr_tready            ( vc_dac_ready          ), // input
-    .cr_recording_enabled  (                       ), // output
-    .cr_playback_enabled   (                       ), // output
-    .awid                  (                       ), // output
-    .awaddr                (                       ), // output
-    .awlen                 (                       ), // output
-    .awvalid               (                       ), // output
-    .awready               (                       ), // input
-    .wdata                 (                       ), // output
-    .wstrb                 (                       ), // output
-    .wlast                 (                       ), // output
-    .wvalid                (                       ), // output
-    .wready                (                       ), // input
-    .arid                  (                       ), // output
-    .araddr                (                       ), // output
-    .arlen                 (                       ), // output
-    .arvalid               (                       ), // output
-    .arready               (                       ), // input
-    .rid                   (                       ), // input
-    .rdata                 (                       ), // input
-    .rlast                 (                       ), // input
-    .rvalid                (                       ), // input
-    .rready                (                       )  // output
-  );
-*/
 
 endmodule
 

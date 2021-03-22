@@ -25,11 +25,13 @@ package dafx_tc_pkg;
   `include "uvm_macros.svh"
   import uvm_pkg::*;
 
+  import dafx_pkg::*;
   import dafx_tb_pkg::*;
 
   // Import testbench and agent packages here
   import bool_pkg::*;
   import report_server_pkg::*;
+  import vip_fixed_point_pkg::*;
   import vip_axi4_types_pkg::*;
   import vip_axi4_agent_pkg::*;
   import vip_axi4s_types_pkg::*;

@@ -38,41 +38,30 @@ module dafx_tb_top;
     .AXI4_ADDR_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_ADDR_WIDTH_P ),
     .AXI4_DATA_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_DATA_WIDTH_P ),
     .AXI4_STRB_WIDTH_P ( VIP_REG_CFG_C.VIP_AXI4_STRB_WIDTH_P )
-  ) cfg_vif (clk_rst_vif0.clk, clk_rst_vif0.rst_n);
+  ) dafx_cfg_if (clk_rst_vif0.clk, clk_rst_vif0.rst_n);
 
-  //----------------------------------------------------------------------------
-  // Register
-  //----------------------------------------------------------------------------
 
-  // Write Address Channel
-  assign cfg_vif.awaddr  = reg_vif.awaddr;
-  assign cfg_vif.awvalid = reg_vif.awvalid;
-  assign reg_vif.awready = cfg_vif.awready;
-
-  // Write Data Channel
-  assign cfg_vif.wdata   = reg_vif.wdata;
-  assign cfg_vif.wstrb   = reg_vif.wstrb;
-  assign cfg_vif.wlast   = reg_vif.wlast;
-  assign cfg_vif.wvalid  = reg_vif.wvalid;
-  assign reg_vif.wready  = cfg_vif.wready;
-
-  // Write Response Channel
-  assign reg_vif.bresp   = cfg_vif.bresp;
-  assign reg_vif.bvalid  = cfg_vif.bvalid;
-  assign cfg_vif.bready  = reg_vif.bready;
-
-  // Read Address Channel
-  assign cfg_vif.araddr  = reg_vif.araddr;
-  assign cfg_vif.arlen   = reg_vif.arlen;
-  assign cfg_vif.arvalid = reg_vif.arvalid;
-  assign reg_vif.arready = cfg_vif.arready;
-
-  // Read Data Channel
-  assign reg_vif.rdata   = cfg_vif.rdata;
-  assign reg_vif.rresp   = cfg_vif.rresp;
-  assign reg_vif.rlast   = cfg_vif.rlast;
-  assign reg_vif.rvalid  = cfg_vif.rvalid;
-  assign cfg_vif.rready  = reg_vif.rready;
+  // Register slave
+  assign dafx_cfg_if.awaddr  = reg_vif.awaddr;
+  assign dafx_cfg_if.awvalid = reg_vif.awvalid;
+  assign reg_vif.awready     = dafx_cfg_if.awready;
+  assign dafx_cfg_if.wdata   = reg_vif.wdata;
+  assign dafx_cfg_if.wstrb   = reg_vif.wstrb;
+  assign dafx_cfg_if.wlast   = reg_vif.wlast;
+  assign dafx_cfg_if.wvalid  = reg_vif.wvalid;
+  assign reg_vif.wready      = dafx_cfg_if.wready;
+  assign reg_vif.bresp       = dafx_cfg_if.bresp;
+  assign reg_vif.bvalid      = dafx_cfg_if.bvalid;
+  assign dafx_cfg_if.bready  = reg_vif.bready;
+  assign dafx_cfg_if.araddr  = reg_vif.araddr;
+  assign dafx_cfg_if.arlen   = reg_vif.arlen;
+  assign dafx_cfg_if.arvalid = reg_vif.arvalid;
+  assign reg_vif.arready     = dafx_cfg_if.arready;
+  assign reg_vif.rdata       = dafx_cfg_if.rdata;
+  assign reg_vif.rresp       = dafx_cfg_if.rresp;
+  assign reg_vif.rlast       = dafx_cfg_if.rlast;
+  assign reg_vif.rvalid      = dafx_cfg_if.rvalid;
+  assign dafx_cfg_if.rready  = reg_vif.rready;
 
 
   initial begin
@@ -100,6 +89,7 @@ module dafx_tb_top;
     .rst_n        ( clk_rst_vif0.rst_n ), // input
     .clk_mclk     ( clk_rst_vif1.clk   ), // input
     .rst_mclk_n   ( clk_rst_vif0.rst_n ), // input
+    .dafx_cfg_if  ( dafx_cfg_if.slave  ), // interface
 
     .cs_adc_data  ( cir_vif.tdata      ), // input
     .cs_adc_valid ( cir_vif.tvalid     ), // input
@@ -111,54 +101,23 @@ module dafx_tb_top;
     .cs_dac_last  (                    ), // output
 
     // Arty Z7 LEDS
-    .led_0        ( led_0              ), // output
-    .led_1        ( led_1              ), // output
-    .led_2        ( led_2              ), // output
-    .led_3        ( led_3              ), // output
+    .led_0        (                    ), // output
+    .led_1        (                    ), // output
+    .led_2        (                    ), // output
 
     // Arty Z7 buttons
-    .btn_0        ( btn_0              ), // input
-    .btn_1        ( btn_1              ), // input
-    .btn_2        ( btn_2              ), // input
-    .btn_3        ( btn_3              ), // input
+    .btn_0        ('0                  ), // input
+    .btn_1        ('0                  ), // input
+    .btn_2        ('0                  ), // input
+    .btn_3        ('0                  ), // input
 
     // Arty Z7 switches
-    .sw_0         ( sw_0               ), // input
-    .sw_1         ( sw_1               ), // input
+    .sw_0         ( '0                 ), // input
+    .sw_1         ( '0                 ), // input
 
     // IRQ
-    .irq_0        ( irq_0              ), // output
-    .irq_1        ( irq_1              ), // output
-
-    // Write Address Channel
-    .cfg_awaddr   ( cfg_vif.awaddr     ), // input
-    .cfg_awvalid  ( cfg_vif.awvalid    ), // input
-    .cfg_awready  ( cfg_vif.awready    ), // output
-
-    // Write Data Channel
-    .cfg_wdata    ( cfg_vif.wdata      ), // input
-    .cfg_wstrb    ( cfg_vif.wstrb      ), // input
-    .cfg_wlast    ( cfg_vif.wlast      ), // input
-    .cfg_wvalid   ( cfg_vif.wvalid     ), // input
-    .cfg_wready   ( cfg_vif.wready     ), // output
-
-    // Write Response Channel
-    .cfg_bresp    ( cfg_vif.bresp      ), // output
-    .cfg_bvalid   ( cfg_vif.bvalid     ), // output
-    .cfg_bready   ( cfg_vif.bready     ), // input
-
-    // Read Address Channel
-    .cfg_araddr   ( cfg_vif.araddr     ), // input
-    .cfg_arlen    ( cfg_vif.arlen      ), // input
-    .cfg_arvalid  ( cfg_vif.arvalid    ), // input
-    .cfg_arready  ( cfg_vif.arready    ), // output
-
-    // Read Data Channel
-    .cfg_rdata    ( cfg_vif.rdata      ), // output
-    .cfg_rresp    ( cfg_vif.rresp      ), // output
-    .cfg_rlast    ( cfg_vif.rlast      ), // output
-    .cfg_rvalid   ( cfg_vif.rvalid     ), // output
-    .cfg_rready   ( cfg_vif.rready     ), // input
+    .irq_0        (                    ), // output
+    .irq_1        (                    ), // output
 
     // Write Address Channel
     .mc_awid      ( mem_vif.awid       ), // output

@@ -27,130 +27,132 @@ module dafx_top #(
     parameter int MC_ID_WIDTH_P    = 6,
     parameter int MC_ADDR_WIDTH_P  = 32,
     parameter int MC_DATA_WIDTH_P  = 128,
+    parameter int CFG_ID_WIDTH_P   = 16,
     parameter int CFG_ADDR_WIDTH_P = 16,
     parameter int CFG_DATA_WIDTH_P = 64,
+    parameter int CFG_STRB_WIDTH_P = 64,
     parameter int AXI_ID_WIDTH_P   = 32,
     parameter int AXI_ADDR_WIDTH_P = 7,
     parameter int AXI_DATA_WIDTH_P = 32,
     parameter int AXI_STRB_WIDTH_P = AXI_DATA_WIDTH_P/8
   )(
     // Clock and reset
-    input  wire                                   clk,
-    input  wire                                   rst_n,
+    input  wire                               clk,
+    input  wire                               rst_n,
 
     // ---------------------------------------------------------------------------
     // PL I/O
     // ---------------------------------------------------------------------------
 
     // Arty Z7 LEDS
-    output logic                                  led_0,
-    output logic                                  led_1,
-    output logic                                  led_2,
-    output logic                                  led_3,
+    output logic                              led_0,
+    output logic                              led_1,
+    output logic                              led_2,
+    output logic                              led_3,
 
     // Arty Z7 buttons
-    input  wire                                   btn_0,
-    input  wire                                   btn_1,
-    input  wire                                   btn_2,
-    input  wire                                   btn_3,
+    input  wire                               btn_0,
+    input  wire                               btn_1,
+    input  wire                               btn_2,
+    input  wire                               btn_3,
 
     // Arty Z7 switches
-    input  wire                                   sw_0,
-    input  wire                                   sw_1,
+    input  wire                               sw_0,
+    input  wire                               sw_1,
 
-    output logic                                  irq_0,
-    output logic                                  irq_1,
+    output logic                              irq_0,
+    output logic                              irq_1,
 
     // ---------------------------------------------------------------------------
     // PL register AXI4 ports
     // ---------------------------------------------------------------------------
 
     // Write Address Channel
-    input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
-    input  wire                                   cfg_awvalid,
-    output logic                                  cfg_awready,
+    input  wire      [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
+    input  wire                               cfg_awvalid,
+    output logic                              cfg_awready,
 
     // Write Data Channel
-    input  wire          [CFG_DATA_WIDTH_P-1 : 0] cfg_wdata,
-    input  wire      [(CFG_DATA_WIDTH_P/8)-1 : 0] cfg_wstrb,
-    input  wire                                   cfg_wlast,
-    input  wire                                   cfg_wvalid,
-    output logic                                  cfg_wready,
+    input  wire      [CFG_DATA_WIDTH_P-1 : 0] cfg_wdata,
+    input  wire  [(CFG_DATA_WIDTH_P/8)-1 : 0] cfg_wstrb,
+    input  wire                               cfg_wlast,
+    input  wire                               cfg_wvalid,
+    output logic                              cfg_wready,
 
     // Write Response Channel
-    output logic                          [1 : 0] cfg_bresp,
-    output logic                                  cfg_bvalid,
-    input  wire                                   cfg_bready,
+    output logic                      [1 : 0] cfg_bresp,
+    output logic                              cfg_bvalid,
+    input  wire                               cfg_bready,
 
     // Read Address Channel
-    input  wire          [CFG_ADDR_WIDTH_P-1 : 0] cfg_araddr,
-    input  wire                           [7 : 0] cfg_arlen,
-    input  wire                                   cfg_arvalid,
-    output logic                                  cfg_arready,
+    input  wire      [CFG_ADDR_WIDTH_P-1 : 0] cfg_araddr,
+    input  wire                       [7 : 0] cfg_arlen,
+    input  wire                               cfg_arvalid,
+    output logic                              cfg_arready,
 
     // Read Data Channel
-    output logic         [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
-    output logic                          [1 : 0] cfg_rresp,
-    output logic                                  cfg_rlast,
-    output logic                                  cfg_rvalid,
-    input  wire                                   cfg_rready,
+    output logic     [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
+    output logic                      [1 : 0] cfg_rresp,
+    output logic                              cfg_rlast,
+    output logic                              cfg_rvalid,
+    input  wire                               cfg_rready,
 
     // ---------------------------------------------------------------------------
     // Memory Controller AXI4 ports
     // ---------------------------------------------------------------------------
 
     // Write Address Channel
-    output logic            [MC_ID_WIDTH_P-1 : 0] mc_awid,
-    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
-    output logic                          [7 : 0] mc_awlen,
-    output logic                          [2 : 0] mc_awsize,
-    output logic                          [1 : 0] mc_awburst,
-    output logic                                  mc_awlock,
-    output logic                          [3 : 0] mc_awqos,
-    output logic                                  mc_awvalid,
-    input  wire                                   mc_awready,
+    output logic        [MC_ID_WIDTH_P-1 : 0] mc_awid,
+    output logic      [MC_ADDR_WIDTH_P-1 : 0] mc_awaddr,
+    output logic                      [7 : 0] mc_awlen,
+    output logic                      [2 : 0] mc_awsize,
+    output logic                      [1 : 0] mc_awburst,
+    output logic                              mc_awlock,
+    output logic                      [3 : 0] mc_awqos,
+    output logic                              mc_awvalid,
+    input  wire                               mc_awready,
 
     // Write Data Channel
-    output logic          [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
-    output logic      [(MC_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
-    output logic                                  mc_wlast,
-    output logic                                  mc_wvalid,
-    input  wire                                   mc_wready,
+    output logic      [MC_DATA_WIDTH_P-1 : 0] mc_wdata,
+    output logic  [(MC_DATA_WIDTH_P/8)-1 : 0] mc_wstrb,
+    output logic                              mc_wlast,
+    output logic                              mc_wvalid,
+    input  wire                               mc_wready,
 
     // Write Response Channel
-    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_bid,
-    input  wire                           [1 : 0] mc_bresp,
-    input  wire                                   mc_bvalid,
-    output logic                                  mc_bready,
+    input  wire         [MC_ID_WIDTH_P-1 : 0] mc_bid,
+    input  wire                       [1 : 0] mc_bresp,
+    input  wire                               mc_bvalid,
+    output logic                              mc_bready,
 
     // Read Address Channel
-    output logic            [MC_ID_WIDTH_P-1 : 0] mc_arid,
-    output logic          [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
-    output logic                          [7 : 0] mc_arlen,
-    output logic                          [2 : 0] mc_arsize,
-    output logic                          [1 : 0] mc_arburst,
-    output logic                                  mc_arlock,
-    output logic                          [3 : 0] mc_arqos,
-    output logic                                  mc_arvalid,
-    input  wire                                   mc_arready,
+    output logic        [MC_ID_WIDTH_P-1 : 0] mc_arid,
+    output logic      [MC_ADDR_WIDTH_P-1 : 0] mc_araddr,
+    output logic                      [7 : 0] mc_arlen,
+    output logic                      [2 : 0] mc_arsize,
+    output logic                      [1 : 0] mc_arburst,
+    output logic                              mc_arlock,
+    output logic                      [3 : 0] mc_arqos,
+    output logic                              mc_arvalid,
+    input  wire                               mc_arready,
 
     // Read Data Channel
-    input  wire             [MC_ID_WIDTH_P-1 : 0] mc_rid,
-    input  wire                           [1 : 0] mc_rresp,
-    input  wire           [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
-    input  wire                                   mc_rlast,
-    input  wire                                   mc_rvalid,
-    output logic                                  mc_rready,
+    input  wire         [MC_ID_WIDTH_P-1 : 0] mc_rid,
+    input  wire                       [1 : 0] mc_rresp,
+    input  wire       [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
+    input  wire                               mc_rlast,
+    input  wire                               mc_rvalid,
+    output logic                              mc_rready,
 
     // Cirrus CS5343 ADC/DAC
-    output logic                                  cs_tx_mclk,
-    output logic                                  cs_tx_lrck,
-    output logic                                  cs_tx_sclk,
-    output logic                                  cs_tx_sdout,
-    output logic                                  cs_rx_mclk,
-    output logic                                  cs_rx_lrck,
-    output logic                                  cs_rx_sclk,
-    input  wire                                   cs_rx_sdin
+    output logic                              cs_tx_mclk,
+    output logic                              cs_tx_lrck,
+    output logic                              cs_tx_sclk,
+    output logic                              cs_tx_sdout,
+    output logic                              cs_rx_mclk,
+    output logic                              cs_rx_lrck,
+    output logic                              cs_rx_sclk,
+    input  wire                               cs_rx_sdin
   );
 
   logic clk_mclk;
@@ -163,6 +165,8 @@ module dafx_top #(
   logic switch_0;
   logic switch_1;
 
+  logic [AXI_DATA_WIDTH_P-1 : 0] led_3_counter;
+
   // I2S2 PMOD
   logic [23 : 0] cs_adc_data;
   logic          cs_adc_ready;
@@ -174,9 +178,66 @@ module dafx_top #(
   logic          cs_dac_valid;
   logic          cs_dac_ready;
 
-  // -------------------------------------------------------------------------
+  //----------------------------------------------------------------------------
+  // Register
+  //----------------------------------------------------------------------------
+
+  axi4_reg_if  #(
+    .AXI4_ID_WIDTH_P   ( CFG_ID_WIDTH_P   ),
+    .AXI4_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P ),
+    .AXI4_DATA_WIDTH_P ( CFG_DATA_WIDTH_P ),
+    .AXI4_STRB_WIDTH_P ( CFG_STRB_WIDTH_P )
+  ) dafx_cfg_if (clk, rst_n);
+
+  // Write Address Channel
+  assign dafx_cfg_if.awaddr  = cfg_awaddr;
+  assign dafx_cfg_if.awvalid = cfg_awvalid;
+  assign cfg_awready = dafx_cfg_if.awready;
+
+  // Write Data Channel
+  assign dafx_cfg_if.wdata   = cfg_wdata;
+  assign dafx_cfg_if.wstrb   = cfg_wstrb;
+  assign dafx_cfg_if.wlast   = cfg_wlast;
+  assign dafx_cfg_if.wvalid  = cfg_wvalid;
+  assign cfg_wready  = dafx_cfg_if.wready;
+
+  // Write Response Channel
+  assign cfg_bresp   = dafx_cfg_if.bresp;
+  assign cfg_bvalid  = dafx_cfg_if.bvalid;
+  assign dafx_cfg_if.bready  = cfg_bready;
+
+  // Read Address Channel
+  assign dafx_cfg_if.araddr  = cfg_araddr;
+  assign dafx_cfg_if.arlen   = cfg_arlen;
+  assign dafx_cfg_if.arvalid = cfg_arvalid;
+  assign cfg_arready = dafx_cfg_if.arready;
+
+  // Read Data Channel
+  assign cfg_rdata   = dafx_cfg_if.rdata;
+  assign cfg_rresp   = dafx_cfg_if.rresp;
+  assign cfg_rlast   = dafx_cfg_if.rlast;
+  assign cfg_rvalid  = dafx_cfg_if.rvalid;
+  assign dafx_cfg_if.rready  = cfg_rready;
+
+
+  // Clock 'clk_sys' (125MHz) with LED process
+  always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
+    if (!rst_n) begin
+      led_3         <= '0;
+      led_3_counter <= '0;
+    end else begin
+      if (led_3_counter == 62500000-1) begin
+        led_3         <= ~led_3;
+        led_3_counter <= 0;
+      end else begin
+        led_3_counter <= led_3_counter + 1;
+      end
+    end
+  end
+
+  // ---------------------------------------------------------------------------
   // PLL for the Cirrus ICs
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   car_cs5343 car_cs5343_i0 (
     .clk        ( clk        ), // input
     .rst_n      ( rst_n      ), // input
@@ -260,20 +321,21 @@ module dafx_top #(
   // Core
   // ---------------------------------------------------------------------------
   dafx_core #(
-    .MC_ID_WIDTH_P    ( 6                  ),
-    .MC_ADDR_WIDTH_P  ( 32                 ),
-    .MC_DATA_WIDTH_P  ( 128                ),
-    .CFG_ADDR_WIDTH_P ( 16                 ),
-    .CFG_DATA_WIDTH_P ( 64                 ),
-    .AXI_ID_WIDTH_P   ( 32                 ),
-    .AXI_ADDR_WIDTH_P ( 7                  ),
-    .AXI_DATA_WIDTH_P ( 32                 ),
-    .AXI_STRB_WIDTH_P ( AXI_DATA_WIDTH_P/8 )
+    .MC_ID_WIDTH_P    ( MC_ID_WIDTH_P      ),
+    .MC_ADDR_WIDTH_P  ( MC_ADDR_WIDTH_P    ),
+    .MC_DATA_WIDTH_P  ( MC_DATA_WIDTH_P    ),
+    .CFG_ID_WIDTH_P   ( CFG_ID_WIDTH_P     ),
+    .CFG_ADDR_WIDTH_P ( CFG_ADDR_WIDTH_P   ),
+    .CFG_DATA_WIDTH_P ( CFG_DATA_WIDTH_P   ),
+    .AXI_ID_WIDTH_P   ( AXI_ID_WIDTH_P     ),
+    .AXI_ADDR_WIDTH_P ( AXI_ADDR_WIDTH_P   ),
+    .AXI_DATA_WIDTH_P ( AXI_DATA_WIDTH_P   )
   ) dafx_core_i0 (
     .clk              ( clk                ), // input
     .rst_n            ( rst_n              ), // input
     .clk_mclk         ( clk_mclk           ), // input
     .rst_mclk_n       ( rst_mclk_n         ), // input
+    .dafx_cfg_if      ( dafx_cfg_if.slave  ), // interface
     .cs_adc_data      ( cs_adc_data        ), // input
     .cs_adc_valid     ( cs_adc_valid       ), // input
     .cs_adc_ready     ( cs_adc_ready       ), // output
@@ -285,7 +347,6 @@ module dafx_top #(
     .led_0            ( led_0              ), // output
     .led_1            ( led_1              ), // output
     .led_2            ( led_2              ), // output
-    .led_3            ( led_3              ), // output
     .btn_0            ( btn_0_tgl          ), // input
     .btn_1            ( btn_1_tgl          ), // input
     .btn_2            ( btn_2_tgl          ), // input

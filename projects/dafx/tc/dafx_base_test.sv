@@ -57,6 +57,10 @@ class dafx_base_test extends uvm_test;
   reset_sequence     reset_seq0;
   cir_send_audio_seq cir_send_audio_seq0;
 
+  logic [N_BITS_C-1 : 0] cr_osc0_frequency;
+  logic [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
+
+
   function new(string name = "dafx_base_test", uvm_component parent = null);
     super.new(name, parent);
   endfunction

@@ -52,6 +52,14 @@ class tc_dafx extends dafx_base_test;
 
     clk_delay(1000000);
 
+    cr_osc0_frequency  = float_to_fixed_point(1000.0, Q_BITS_C);
+    cr_osc0_duty_cycle = float_to_fixed_point(75.0,   Q_BITS_C);
+
+    reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
+    reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
+
+    clk_delay(100);
+
     `uvm_info(get_name(), $sformatf("Done!"), UVM_LOW)
     phase.drop_objection(this);
 
