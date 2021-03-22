@@ -67,8 +67,7 @@ module dafx_tb_top;
   initial begin
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env*",                "vif", clk_rst_vif0);
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env.clk_rst_agent0*", "vif", clk_rst_vif0);
-    uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env.clk_rst_agent1*", "vif", clk_rst_vif1);
-    uvm_config_db #(virtual vip_axi4_if  #(VIP_MEM_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.mem_agent0*",     "vif", mem_vif);
+    uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get() :set(uvm_root::get(), "uvm_test_top.tb_env.mem_agent0*",     "vif", mem_vif);
     uvm_config_db #(virtual vip_axi4_if  #(VIP_REG_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.reg_agent0*",     "vif", reg_vif);
     uvm_config_db #(virtual vip_axi4s_if #(VIP_CIR_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.cir_agent0*",     "vif", cir_vif);
     run_test();
@@ -117,50 +116,7 @@ module dafx_tb_top;
 
     // IRQ
     .irq_0        (                    ), // output
-    .irq_1        (                    ), // output
-
-    // Write Address Channel
-    .mc_awid      ( mem_vif.awid       ), // output
-    .mc_awaddr    ( mem_vif.awaddr     ), // output
-    .mc_awlen     ( mem_vif.awlen      ), // output
-    .mc_awsize    ( mem_vif.awsize     ), // output
-    .mc_awburst   ( mem_vif.awburst    ), // output
-    .mc_awlock    ( mem_vif.awlock     ), // output
-    .mc_awqos     ( mem_vif.awqos      ), // output
-    .mc_awvalid   ( mem_vif.awvalid    ), // output
-    .mc_awready   ( mem_vif.awready    ), // input
-
-    // Write Data Channel
-    .mc_wdata     ( mem_vif.wdata      ), // output
-    .mc_wstrb     ( mem_vif.wstrb      ), // output
-    .mc_wlast     ( mem_vif.wlast      ), // output
-    .mc_wvalid    ( mem_vif.wvalid     ), // output
-    .mc_wready    ( mem_vif.wready     ), // input
-
-    // Write Response Channel
-    .mc_bid       ( mem_vif.bid        ), // input
-    .mc_bresp     ( mem_vif.bresp      ), // input
-    .mc_bvalid    ( mem_vif.bvalid     ), // input
-    .mc_bready    ( mem_vif.bready     ), // output
-
-    // Read Address Channel
-    .mc_arid      ( mem_vif.arid       ), // output
-    .mc_araddr    ( mem_vif.araddr     ), // output
-    .mc_arlen     ( mem_vif.arlen      ), // output1
-    .mc_arsize    ( mem_vif.arsize     ), // output
-    .mc_arburst   ( mem_vif.arburst    ), // output
-    .mc_arlock    ( mem_vif.arlock     ), // output
-    .mc_arqos     ( mem_vif.arqos      ), // output
-    .mc_arvalid   ( mem_vif.arvalid    ), // output
-    .mc_arready   ( mem_vif.arready    ), // input
-
-    // Read Data Channel
-    .mc_rid       ( mem_vif.rid        ), // input
-    .mc_rresp     ( mem_vif.rresp      ), // input
-    .mc_rdata     ( mem_vif.rdata      ), // input
-    .mc_rlast     ( mem_vif.rlast      ), // input
-    .mc_rvalid    ( mem_vif.rvalid     ), // input
-    .mc_rready    ( mem_vif.rready     )  // output
+    .irq_1        (                    )  // output
   );
 
   initial begin

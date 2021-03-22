@@ -21,7 +21,7 @@ source $git_sub_root/submodules/rtl_common_design/modules/axi4_write_arbiter/rtl
 source $git_sub_root/submodules/rtl_common_design/modules/memory/reg/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/fifo/synchronous_fifo/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/math/multiplication/rtl/rtl_files.lst
-source $git_sub_root/submodules/rtl_common_design/modules/mixer/rtl/rtl_files.lst
+#source $git_sub_root/submodules/rtl_common_design/modules/mixer/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/math/cordic/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/math/division/long_division/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/clock_enable/rtl/rtl_files.lst
@@ -29,6 +29,7 @@ source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/clock_e
 source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/delay_enable/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/clock_enablers/frequency_enable/rtl/rtl_files.lst
 source $git_sub_root/submodules/rtl_common_design/modules/oscillator/rtl/rtl_files.lst
+source $git_sub_root/submodules/rtl_common_design/modules/interfaces/axi4/rtl/files.lst
 
 git_root="$(git rev-parse --show-toplevel)/submodules/VIP"
 source $git_sub_root/submodules/VIP/bool/files.lst

@@ -354,60 +354,7 @@ module dafx_top #(
     .sw_0             ( switch_0           ), // input
     .sw_1             ( switch_1           ), // input
     .irq_0            ( irq_0              ), // output
-    .irq_1            ( irq_1              ), // output
-    .cfg_awaddr       ( cfg_awaddr         ), // input
-    .cfg_awvalid      ( cfg_awvalid        ), // input
-    .cfg_awready      ( cfg_awready        ), // output
-    .cfg_wdata        ( cfg_wdata          ), // input
-    .cfg_wstrb        ( cfg_wstrb          ), // input
-    .cfg_wlast        ( cfg_wlast          ), // input
-    .cfg_wvalid       ( cfg_wvalid         ), // input
-    .cfg_wready       ( cfg_wready         ), // output
-    .cfg_bresp        ( cfg_bresp          ), // output
-    .cfg_bvalid       ( cfg_bvalid         ), // output
-    .cfg_bready       ( cfg_bready         ), // input
-    .cfg_araddr       ( cfg_araddr         ), // input
-    .cfg_arlen        ( cfg_arlen          ), // input
-    .cfg_arvalid      ( cfg_arvalid        ), // input
-    .cfg_arready      ( cfg_arready        ), // output
-    .cfg_rdata        ( cfg_rdata          ), // output
-    .cfg_rresp        ( cfg_rresp          ), // output
-    .cfg_rlast        ( cfg_rlast          ), // output
-    .cfg_rvalid       ( cfg_rvalid         ), // output
-    .cfg_rready       ( cfg_rready         ), // input
-    .mc_awid          ( mc_awid            ), // output
-    .mc_awaddr        ( mc_awaddr          ), // output
-    .mc_awlen         ( mc_awlen           ), // output
-    .mc_awsize        ( mc_awsize          ), // output
-    .mc_awburst       ( mc_awburst         ), // output
-    .mc_awlock        ( mc_awlock          ), // output
-    .mc_awqos         ( mc_awqos           ), // output
-    .mc_awvalid       ( mc_awvalid         ), // output
-    .mc_awready       ( mc_awready         ), // input
-    .mc_wdata         ( mc_wdata           ), // output
-    .mc_wstrb         ( mc_wstrb           ), // output
-    .mc_wlast         ( mc_wlast           ), // output
-    .mc_wvalid        ( mc_wvalid          ), // output
-    .mc_wready        ( mc_wready          ), // input
-    .mc_bid           ( mc_bid             ), // input
-    .mc_bresp         ( mc_bresp           ), // input
-    .mc_bvalid        ( mc_bvalid          ), // input
-    .mc_bready        ( mc_bready          ), // output
-    .mc_arid          ( mc_arid            ), // output
-    .mc_araddr        ( mc_araddr          ), // output
-    .mc_arlen         ( mc_arlen           ), // output
-    .mc_arsize        ( mc_arsize          ), // output
-    .mc_arburst       ( mc_arburst         ), // output
-    .mc_arlock        ( mc_arlock          ), // output
-    .mc_arqos         ( mc_arqos           ), // output
-    .mc_arvalid       ( mc_arvalid         ), // output
-    .mc_arready       ( mc_arready         ), // input
-    .mc_rid           ( mc_rid             ), // input
-    .mc_rresp         ( mc_rresp           ), // input
-    .mc_rdata         ( mc_rdata           ), // input
-    .mc_rlast         ( mc_rlast           ), // input
-    .mc_rvalid        ( mc_rvalid          ), // input
-    .mc_rready        ( mc_rready          )  // output
+    .irq_1            ( irq_1              )  // output
   );
 
 endmodule
