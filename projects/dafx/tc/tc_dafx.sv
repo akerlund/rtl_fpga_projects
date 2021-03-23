@@ -39,12 +39,14 @@ class tc_dafx extends dafx_base_test;
     super.run_phase(phase);
     phase.raise_objection(this);
 
-    cir_send_audio_seq0.f  = 441.0;
-    cir_send_audio_seq0.fs = 44100.0;
+    cir_send_audio_seq0.f            = 441.0;
+    cir_send_audio_seq0.fs           = 44100.0;
     cir_send_audio_seq0.clock_period = clk_rst_config0.clock_period;
-    cir_send_audio_seq0.set_data_type(VIP_AXI4S_TDATA_COUNTER_E);
-    cir_send_audio_seq0.set_burst_length(16);
-    cir_send_audio_seq0.set_tstrb(VIP_AXI4S_TSTRB_ALL_E);
+
+    cr_osc0_frequency  = float_to_fixed_point(1000.0, Q_BITS_C);
+    cr_osc0_duty_cycle = float_to_fixed_point(75.0,   Q_BITS_C);
+    reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
+    reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
 
     fork
       cir_send_audio_seq0.start(v_sqr.cir_sequencer);
@@ -52,9 +54,8 @@ class tc_dafx extends dafx_base_test;
 
     clk_delay(1000000);
 
-    cr_osc0_frequency  = float_to_fixed_point(1000.0, Q_BITS_C);
-    cr_osc0_duty_cycle = float_to_fixed_point(75.0,   Q_BITS_C);
-
+    cr_osc0_frequency  = float_to_fixed_point(2000.0, Q_BITS_C);
+    cr_osc0_duty_cycle = float_to_fixed_point(55.0,   Q_BITS_C);
     reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
     reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
 

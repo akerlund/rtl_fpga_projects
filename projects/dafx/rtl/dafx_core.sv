@@ -78,53 +78,31 @@ module dafx_core #(
     output logic                                  irq_1
   );
 
-  // -----------------------------------------------------------------------------
-  // IRQ
-  // -----------------------------------------------------------------------------
-  logic [AXI_DATA_WIDTH_P-1 : 0] irq_0_counter;
-  logic [AXI_DATA_WIDTH_P-1 : 0] irq_1_counter;
-
-  // -----------------------------------------------------------------------------
-  // Toggling LED
-  // -----------------------------------------------------------------------------
-  logic [AXI_DATA_WIDTH_P-1 : 0] led_2_counter;
-
-  // -----------------------------------------------------------------------------
-  // AXI4 registers
-  // -----------------------------------------------------------------------------
-  logic [63 : 0] cr_led_0;
-  logic          cmd_clear_irq_0;
-
-  // -----------------------------------------------------------------------------
-  // AXI4 Arbiters
-  // -----------------------------------------------------------------------------
-
   axi4_if #(
     .ID_WIDTH_P   ( MC_ID_WIDTH_P   ),
     .ADDR_WIDTH_P ( MC_ADDR_WIDTH_P ),
     .DATA_WIDTH_P ( MC_DATA_WIDTH_P )
   ) axi4_if0 ();
 
+  logic                          cmd_clear_irq_0;
+  logic [AXI_DATA_WIDTH_P-1 : 0] irq_0_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] irq_1_counter;
+  logic [AXI_DATA_WIDTH_P-1 : 0] led_2_counter;
+
   // Mixer
+  logic                                                       fs_strobe;
   logic signed [NR_OF_CHANNELS_C-1 : 0] [AUDIO_WIDTH_C-1 : 0] mix_channel_data;
-  logic                              [NR_OF_CHANNELS_C-1 : 0] sr_mix_channel_clip;
-  logic                                                       sr_mix_out_clip;
+  logic                                                       cmd_cir_clear_max;
   logic         [NR_OF_CHANNELS_C-1 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_1;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_2;
   logic                              [NR_OF_CHANNELS_C-1 : 0] cr_mix_channel_pan;
   logic                                  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain;
-  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude;
-  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude;
-  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude;
-  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude;
-  logic                                                       cmd_cir_clear_max;
-
-  assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
-  assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
-  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;
-
+  logic                                                       sr_mix_out_clip;
+  logic                              [NR_OF_CHANNELS_C-1 : 0] sr_mix_channel_clip;
+  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_mix_max_dac_amplitude;
+  logic                                 [AUDIO_WIDTH_C-1 : 0] sr_mix_min_dac_amplitude;
 
   // Oscillator
   logic signed [WAVE_WIDTH_C-1 : 0] osc_waveform;
@@ -132,13 +110,41 @@ module dafx_core #(
   logic            [N_BITS_C-1 : 0] cr_osc0_frequency;
   logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
 
+  // Mixer assignments
+  assign fs_strobe              = cs_adc_valid && cs_adc_ready && cs_adc_last;
+  assign mix_channel_data[2]    = osc_waveform;
+  assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
+  assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
+  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;
 
-  assign mix_channel_data[2] = osc_waveform;
+  // ADC to mixer channels
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      mix_channel_data[0] <= '0;
+      mix_channel_data[1] <= '0;
+      cr_mix_channel_pan  <= '0;
 
+      cr_mix_channel_pan[0] <= '0;
+      cr_mix_channel_pan[1] <= '0;
+      cr_mix_channel_pan[2] <= '1;
 
+      cs_adc_ready <= '0;
+    end
+    else begin
+      cs_adc_ready <= '1;
+
+      if (cs_adc_valid && cs_adc_ready && !cs_adc_last) begin
+        mix_channel_data[0] <= cs_adc_data;
+      end
+
+      if (cs_adc_valid && cs_adc_ready && cs_adc_last) begin
+        mix_channel_data[1] <= cs_adc_data;
+      end
+    end
+  end
 
   // IRQ 0
-  always_ff @(posedge clk or negedge rst_n) begin : interrupt_p0
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       irq_0         <= '0;
       irq_0_counter <= '0;
@@ -156,7 +162,7 @@ module dafx_core #(
 
 
   // IRQ 1
-  always_ff @(posedge clk or negedge rst_n) begin : interrupt_p1
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       irq_1         <= '0;
       irq_1_counter <= '0;
@@ -174,34 +180,30 @@ module dafx_core #(
   // ---------------------------------------------------------------------------
   // Audio Mixer
   // ---------------------------------------------------------------------------
-  // mixer_top #(
-    // .AUDIO_WIDTH_P       ( AUDIO_WIDTH_C       ),
-    // .GAIN_WIDTH_P        ( GAIN_WIDTH_C        ),
-    // .NR_OF_CHANNELS_P    ( NR_OF_CHANNELS_C    ),
-    // .Q_BITS_P            ( Q_BITS_C            )
-  // ) mixer_top_i0 (
-    // .clk                 ( clk                 ), // input
-    // .rst_n               ( rst_n               ), // input
-    // .adc_data            ( cs_adc_data         ), // input
-    // .adc_valid           ( cs_adc_valid        ), // input
-    // .adc_ready           ( cs_adc_ready        ), // output
-    // .adc_last            ( cs_adc_last         ), // input
-    // .dac_data            ( cs_dac_data         ), // output
-    // .dac_valid           ( cs_dac_valid        ), // output
-    // .dac_ready           ( cs_dac_ready        ), // input
-    // .dac_last            ( cs_dac_last         ), // output
-    // .channel_data        ( mix_channel_data    ), // input
-    // .channel_valid       ( mix_channel_valid   ), // input
-    // .out_left            ( mix_out_left        ), // output
-    // .out_right           ( mix_out_right       ), // output
-    // .out_valid           ( mix_out_valid       ), // input
-    // .out_ready           ( mix_out_ready       ), // input
-    // .sr_mix_channel_clip ( sr_mix_channel_clip ), // output
-    // .sr_mix_out_clip     ( sr_mix_out_clip     ), // output
-    // .cr_mix_channel_gain ( cr_mix_channel_gain ), // input
-    // .cr_mix_channel_pan  ( cr_mix_channel_pan  ), // input
-    // .cr_mix_output_gain  ( cr_mix_output_gain  )  // input
-  // );
+  mixer_top #(
+    .AUDIO_WIDTH_P             ( AUDIO_WIDTH_C            ),
+    .GAIN_WIDTH_P              ( GAIN_WIDTH_C             ),
+    .NR_OF_CHANNELS_P          ( NR_OF_CHANNELS_C         ),
+    .Q_BITS_P                  ( Q_BITS_C                 )
+  ) mixer_top_i0 (
+    .clk                       ( clk                      ), // input
+    .rst_n                     ( rst_n                    ), // input
+    .clip_led                  (                          ), // output
+    .fs_strobe                 ( fs_strobe                ), // input
+    .dac_data                  ( cs_dac_data              ), // output
+    .dac_valid                 ( cs_dac_valid             ), // output
+    .dac_ready                 ( cs_dac_ready             ), // input
+    .dac_last                  ( cs_dac_last              ), // output
+    .channel_data              ( mix_channel_data         ), // input
+    .cmd_mix_clear_dac_min_max ( '0                       ), // input
+    .cr_mix_channel_gain       ( cr_mix_channel_gain      ), // input
+    .cr_mix_channel_pan        ( cr_mix_channel_pan       ), // input
+    .cr_mix_output_gain        ( cr_mix_output_gain       ), // input
+    .sr_mix_out_clip           ( sr_mix_out_clip          ), // output
+    .sr_mix_channel_clip       ( sr_mix_channel_clip      ), // output
+    .sr_mix_max_dac_amplitude  ( sr_mix_max_dac_amplitude ), // output
+    .sr_mix_min_dac_amplitude  ( sr_mix_min_dac_amplitude )  // output
+  );
 
   // ---------------------------------------------------------------------------
   // AXI4 Slave with PL registers
@@ -222,17 +224,16 @@ module dafx_core #(
     .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
     .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
     .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
-    .sr_cir_min_adc_amplitude ( -sr_cir_min_adc_amplitude ), // input
-    .sr_cir_max_adc_amplitude ( sr_cir_max_adc_amplitude  ), // input
-    .sr_cir_min_dac_amplitude ( -sr_cir_min_dac_amplitude ), // input
-    .sr_cir_max_dac_amplitude ( sr_cir_max_dac_amplitude  ), // input
+    .sr_cir_min_adc_amplitude ( '0                        ), // input
+    .sr_cir_max_adc_amplitude ( '0                        ), // input
+    .sr_cir_min_dac_amplitude ( -sr_mix_min_dac_amplitude ), // input
+    .sr_cir_max_dac_amplitude ( sr_mix_max_dac_amplitude  ), // input
     .cmd_clear_adc_amplitude  ( cmd_cir_clear_max         ), // output
     .cmd_clear_irq_0          ( cmd_clear_irq_0           ), // output
     .cmd_clear_irq_1          (                           ), // output
     .sr_mix_out_left          ( '0                        ), // input
     .sr_mix_out_right         ( '0                        )  // input
   );
-
 
   // ---------------------------------------------------------------------------
   // Oscillator

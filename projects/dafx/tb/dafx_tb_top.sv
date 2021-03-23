@@ -67,6 +67,7 @@ module dafx_tb_top;
   initial begin
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env*",                "vif", clk_rst_vif0);
     uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env.clk_rst_agent0*", "vif", clk_rst_vif0);
+    uvm_config_db #(virtual clk_rst_if)::set(uvm_root::get(),                    "uvm_test_top.tb_env.clk_rst_agent1*", "vif", clk_rst_vif1);
     uvm_config_db #(virtual vip_axi4_if  #(VIP_MEM_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.mem_agent0*",     "vif", mem_vif);
     uvm_config_db #(virtual vip_axi4_if  #(VIP_REG_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.reg_agent0*",     "vif", reg_vif);
     uvm_config_db #(virtual vip_axi4s_if #(VIP_CIR_CFG_C))::set(uvm_root::get(), "uvm_test_top.tb_env.cir_agent0*",     "vif", cir_vif);

@@ -40,8 +40,9 @@ class cir_send_audio_seq extends vip_axi4s_seq;
 
   task body();
 
-    this.set_burst_length(1);
+    this.set_burst_length(2);
     this.set_data_type(VIP_AXI4S_TDATA_CUSTOM_E);
+    this.set_tstrb(VIP_AXI4S_TSTRB_ALL_E);
 
     generate_sin();
     _fs_ns  = 1 / fs * 1000000000.0;
@@ -49,7 +50,8 @@ class cir_send_audio_seq extends vip_axi4s_seq;
 
     forever begin
       for (int i = 0; i < _sine_data.size(); i++) begin
-        _custom_data.push_back(_sine_data[i]);
+        _custom_data.push_back(_sine_data[i]); // Left channel
+        _custom_data.push_back('0);            // Right channel
         super.body();
         _custom_data.delete();
         #(_fs_clk*clock_period);
