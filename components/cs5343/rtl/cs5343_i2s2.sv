@@ -2,6 +2,7 @@
 //
 // Original author: Arthur Brown, Digilent, 03/23/2018 01:23:15 PM
 // Copyright (C) 2020 Fredrik Åkerlund
+// https://github.com/akerlund/FPGA
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

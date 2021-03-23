@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2021 Fredrik Åkerlund
-// https://github.com/akerlund/VIP
+// https://github.com/akerlund/FPGA
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -57,8 +57,17 @@ class dafx_base_test extends uvm_test;
   reset_sequence     reset_seq0;
   cir_send_audio_seq cir_send_audio_seq0;
 
-  logic [N_BITS_C-1 : 0] cr_osc0_frequency;
-  logic [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
+  logic  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain;
+  logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_0;
+  logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_1;
+  logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain_2;
+  logic               [1 : 0] cr_osc0_waveform_select;
+  logic      [N_BITS_C-1 : 0] cr_osc0_frequency;
+  logic      [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude;
+  logic [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude;
 
 
   function new(string name = "dafx_base_test", uvm_component parent = null);

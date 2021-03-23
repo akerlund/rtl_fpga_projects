@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2021 Fredrik Åkerlund
-// https://github.com/akerlund/VIP
+// https://github.com/akerlund/FPGA
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ package dafx_tc_pkg;
 
   import dafx_pkg::*;
   import dafx_tb_pkg::*;
+  import oscillator_types_pkg::*;
 
-  // Import testbench and agent packages here
   import bool_pkg::*;
   import report_server_pkg::*;
   import vip_fixed_point_pkg::*;
@@ -39,7 +39,6 @@ package dafx_tc_pkg;
   import clk_rst_types_pkg::*;
   import clk_rst_pkg::*;
 
-  // Include testcase files here
   `include "dafx_base_test.sv"
   `include "tc_dafx.sv"
 
