@@ -6,6 +6,7 @@ dafx:
   parameters:
     - GAIN_WIDTH_C
     - N_BITS_C
+    - Q_BITS_C
     - AUDIO_WIDTH_C
 
   registers:
@@ -90,7 +91,7 @@ dafx:
           description: Sets the frequency of oscillator 0,
           size:        N_BITS_C,
           lsb_pos:     0,
-          reset_value: 500
+          reset_value: 500<<Q_BITS_C
         }
 
     - name:   osc0_duty_cycle

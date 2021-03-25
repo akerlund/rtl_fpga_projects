@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2020 Fredrik Åkerlund
-// https://github.com/akerlund/FPGA
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,7 +27,8 @@ module dafx_axi_slave #(
     parameter int AXI_DATA_WIDTH_P = -1,
     parameter int AXI_ID_P = -1,
     parameter int GAIN_WIDTH_C = -1,
-    parameter int N_BITS_C = -1
+    parameter int N_BITS_C = -1,
+    parameter int Q_BITS_C = -1
   )(
     axi4_reg_if.slave cif,
     input  wire               [63 : 0] sr_hardware_version,
@@ -101,7 +101,7 @@ module dafx_axi_slave #(
       cr_mix_channel_gain_1   <= 1;
       cr_mix_channel_gain_2   <= 1;
       cr_osc0_waveform_select <= 0;
-      cr_osc0_frequency       <= 500;
+      cr_osc0_frequency       <= 500<<Q_BITS_C;
       cr_osc0_duty_cycle      <= 500;
       cmd_clear_irq_0         <= 0;
       cmd_clear_irq_1         <= 0;

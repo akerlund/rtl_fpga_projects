@@ -214,7 +214,8 @@ module dafx_core #(
     .AXI_ADDR_WIDTH_P         ( AXI_ADDR_WIDTH_P          ),
     .AUDIO_WIDTH_C            ( AUDIO_WIDTH_C             ),
     .GAIN_WIDTH_C             ( GAIN_WIDTH_C              ),
-    .N_BITS_C                 ( N_BITS_C                  )
+    .N_BITS_C                 ( N_BITS_C                  ),
+    .Q_BITS_C                 ( Q_BITS_C                  )
   ) dafx_axi_slave_i0 (
     .cif                      ( dafx_cfg_if               ), // modport
     .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
@@ -240,22 +241,22 @@ module dafx_core #(
   // Oscillator
   // ---------------------------------------------------------------------------
   oscillator_system #(
-    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C           ),
-    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C             ),
-    .WAVE_WIDTH_P         ( WAVE_WIDTH_C                  ),
-    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C          ),
-    .N_BITS_P             ( N_BITS_C                      ),
-    .Q_BITS_P             ( Q_BITS_C                      ),
-    .AXI_DATA_WIDTH_P     ( N_BITS_C                      ),
-    .AXI_ID_WIDTH_P       ( 5                             ),
-    .AXI_ID_P             ( 0                             )
+    .SYS_CLK_FREQUENCY_P  ( SYS_CLK_FREQUENCY_C     ),
+    .PRIME_FREQUENCY_P    ( PRIME_FREQUENCY_C       ),
+    .WAVE_WIDTH_P         ( WAVE_WIDTH_C            ),
+    .DUTY_CYCLE_DIVIDER_P ( DUTY_CYCLE_DIVIDER_C    ),
+    .N_BITS_P             ( N_BITS_C                ),
+    .Q_BITS_P             ( Q_BITS_C                ),
+    .AXI_DATA_WIDTH_P     ( N_BITS_C                ),
+    .AXI_ID_WIDTH_P       ( 5                       ),
+    .AXI_ID_P             ( 0                       )
   ) oscillator_system_i0 (
-    .clk                  ( clk                           ), // input
-    .rst_n                ( rst_n                         ), // input
-    .waveform             ( osc_waveform                  ), // output
-    .cr_waveform_select   ( cr_osc0_waveform_select       ), // input
-    .cr_frequency         ( cr_osc0_frequency << Q_BITS_C ), // input
-    .cr_duty_cycle        ( cr_osc0_duty_cycle            )  // input
+    .clk                  ( clk                     ), // input
+    .rst_n                ( rst_n                   ), // input
+    .waveform             ( osc_waveform            ), // output
+    .cr_waveform_select   ( cr_osc0_waveform_select ), // input
+    .cr_frequency         ( cr_osc0_frequency       ), // input
+    .cr_duty_cycle        ( cr_osc0_duty_cycle      )  // input
   );
 
 endmodule

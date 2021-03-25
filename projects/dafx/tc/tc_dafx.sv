@@ -44,7 +44,7 @@ class tc_dafx extends dafx_base_test;
     cir_send_audio_seq0.clock_period = clk_rst_config0.clock_period;
 
     cr_osc0_frequency       = float_to_fixed_point(1000.0, Q_BITS_C);
-    cr_osc0_duty_cycle      = float_to_fixed_point(75.0,   Q_BITS_C);
+    cr_osc0_duty_cycle      = 255;
     cr_mix_output_gain      = float_to_fixed_point(1.0,    Q_BITS_C);
     cr_mix_channel_gain_0   = float_to_fixed_point(1.0,    Q_BITS_C);
     cr_mix_channel_gain_1   = float_to_fixed_point(1.0,    Q_BITS_C);
@@ -64,15 +64,15 @@ class tc_dafx extends dafx_base_test;
       cir_send_audio_seq0.start(v_sqr.cir_sequencer);
     join_none
 
-    clk_delay(1000000);
+    clk_delay(10000);
 
     `uvm_info(get_name(), $sformatf("Changing frequency and duty cycle"), UVM_LOW)
     cr_osc0_frequency  = float_to_fixed_point(2000.0, Q_BITS_C);
-    cr_osc0_duty_cycle = float_to_fixed_point(55.0,   Q_BITS_C);
+    cr_osc0_duty_cycle = 511;
     reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
     reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
 
-    clk_delay(100);
+    clk_delay(10000);
 
     `uvm_info(get_name(), $sformatf("Done!"), UVM_LOW)
     phase.drop_objection(this);
