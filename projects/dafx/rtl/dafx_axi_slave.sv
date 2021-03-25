@@ -96,10 +96,10 @@ module dafx_axi_slave #(
       cif.wready  <= '0;
       cif.bvalid  <= '0;
       cif.bresp   <= '0;
-      cr_mix_output_gain      <= 1;
-      cr_mix_channel_gain_0   <= 1;
-      cr_mix_channel_gain_1   <= 1;
-      cr_mix_channel_gain_2   <= 1;
+      cr_mix_output_gain      <= 1<<Q_BITS_C;
+      cr_mix_channel_gain_0   <= 1<<Q_BITS_C;
+      cr_mix_channel_gain_1   <= 1<<Q_BITS_C;
+      cr_mix_channel_gain_2   <= 1<<Q_BITS_C;
       cr_osc0_waveform_select <= 0;
       cr_osc0_frequency       <= 500<<Q_BITS_C;
       cr_osc0_duty_cycle      <= 500;

@@ -113,7 +113,7 @@ module dafx_core #(
 
   // Mixer assignments
   assign fs_strobe              = cs_adc_valid && cs_adc_ready && cs_adc_last;
-  assign mix_channel_data[2]    = osc_waveform;
+  assign mix_channel_data[2]    = osc_waveform >>> 2;
   assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
   assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
   assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;

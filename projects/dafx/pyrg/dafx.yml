@@ -31,7 +31,7 @@ dafx:
           description: Mixer's output gain,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
-          reset_value: 1
+          reset_value: 1<<Q_BITS_C
         }
 
     - name:   mixer_channel_gain_0
@@ -43,7 +43,7 @@ dafx:
           description: Mixer's input gain of channel 0,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
-          reset_value: 1
+          reset_value: 1<<Q_BITS_C
         }
 
     - name:   mixer_channel_gain_1
@@ -55,7 +55,7 @@ dafx:
           description: Mixer's input gain of channel 1,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
-          reset_value: 1
+          reset_value: 1<<Q_BITS_C
         }
 
     - name:   mixer_channel_gain_2
@@ -67,7 +67,7 @@ dafx:
           description: Mixer's input gain of channel 2,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
-          reset_value: 1
+          reset_value: 1<<Q_BITS_C
         }
 
     - name:   osc0_waveform_select

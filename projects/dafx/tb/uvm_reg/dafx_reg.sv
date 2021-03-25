@@ -85,7 +85,7 @@ class mixer_output_gain_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset(1),
+      .reset(1<<Q_BITS_C),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -124,7 +124,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset(1),
+      .reset(1<<Q_BITS_C),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -163,7 +163,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset(1),
+      .reset(1<<Q_BITS_C),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)
@@ -202,7 +202,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
       .lsb_pos(0),
       .access("RW"),
       .volatile(0),
-      .reset(1),
+      .reset(1<<Q_BITS_C),
       .has_reset(1),
       .is_rand(0),
       .individually_accessible(0)

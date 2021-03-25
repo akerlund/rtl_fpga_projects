@@ -49,11 +49,12 @@ class tc_dafx extends dafx_base_test;
     cr_mix_channel_gain_0   = float_to_fixed_point(1.0,    Q_BITS_C);
     cr_mix_channel_gain_1   = float_to_fixed_point(1.0,    Q_BITS_C);
     cr_mix_channel_gain_2   = float_to_fixed_point(1.0,    Q_BITS_C);
-    cr_osc0_waveform_select = OSC_SQUARE_E;
+    cr_osc0_waveform_select = OSC_TRIANGLE_E;
 
     `uvm_info(get_name(), $sformatf("Writing to configuration registers"), UVM_LOW)
     reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
     reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
+    reg_model.dafx.osc0_waveform_select.write(uvm_status, cr_osc0_waveform_select);
     reg_model.dafx.mixer_output_gain.write(uvm_status, cr_mix_output_gain);
     reg_model.dafx.mixer_channel_gain_0.write(uvm_status, cr_mix_channel_gain_0);
     reg_model.dafx.mixer_channel_gain_1.write(uvm_status, cr_mix_channel_gain_1);
@@ -72,7 +73,16 @@ class tc_dafx extends dafx_base_test;
     reg_model.dafx.osc0_frequency.write(uvm_status,  cr_osc0_frequency);
     reg_model.dafx.osc0_duty_cycle.write(uvm_status, cr_osc0_duty_cycle);
 
-    clk_delay(10000);
+    clk_delay(250000);
+    cr_osc0_waveform_select = OSC_SQUARE_E;
+    reg_model.dafx.osc0_waveform_select.write(uvm_status, cr_osc0_waveform_select);
+    clk_delay(250000);
+    cr_osc0_waveform_select = OSC_SAW_E;
+    reg_model.dafx.osc0_waveform_select.write(uvm_status, cr_osc0_waveform_select);
+    clk_delay(250000);
+    cr_osc0_waveform_select = OSC_SINE_E;
+    reg_model.dafx.osc0_waveform_select.write(uvm_status, cr_osc0_waveform_select);
+    clk_delay(250000);
 
     `uvm_info(get_name(), $sformatf("Done!"), UVM_LOW)
     phase.drop_objection(this);
