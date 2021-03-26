@@ -42,16 +42,6 @@ source $git_sub_root/submodules/VIP/report_server/files.lst
 git_root="$(git rev-parse --show-toplevel)/submodules/PYRG"
 source $git_sub_root/submodules/PYRG/rtl/files.lst
 
-# Printing out the files
-eval "arr=($rtl_files)"
-
-echo "the files:"
-for index in "${!arr[@]}"; do
-  if [[ ! ${arr[index]} =~ \#.* ]] && [[ ! ${arr[index]} =~ ^$ ]]; then # We do not include empty lines
-    echo "$index ${arr[index]}"
-    submodule_files+="${arr[index]} "
-  fi
-done
 
 # ------------------------------------------------------------------------------
 # Source modules
@@ -65,6 +55,19 @@ source $git_root/components/cs5343/rtl/rtl_files.lst
 # Source the module's file lists
 source ./rtl/files.lst
 source ./tb/files.lst
+source ./sw/files.lst
 
 # Parameter override
 parameters+=(" ")
+
+# FPGA
+VITIS_DIR="/opt/Xilinx/Vitis/2020.1"
+JTAG_NAME="__TODO__"
+PLATFORM_NAME="the_platform"
+APP_NAME="dafx"
+DOMAIN_NAME="domain_ps7_cortexa9_0"
+PROCESSOR="ps7_cortexa9_0"
+XSA_FILE="zc702"
+BIT_FILE="__TODO__"
+FSBL_FILE="__TODO__"
+APP_ELF_FILE="__TODO__"

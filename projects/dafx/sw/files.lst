@@ -1,0 +1,5 @@
+module_path=$git_root/projects/dafx
+
+inc_dirs+="
+  -path $module_path/sw/
+"
