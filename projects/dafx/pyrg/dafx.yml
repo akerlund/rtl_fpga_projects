@@ -106,6 +106,18 @@ dafx:
           reset_value: 500
         }
 
+    - name:   cpu_led
+      desc:   CPU LED
+      access: RW
+      bit_fields:
+        - field: {
+          name:        cr_cpu_led,
+          description: Turn on or off an LED,
+          size:        1,
+          lsb_pos:     0,
+          reset_value: 0
+        }
+
     - name:   cir_min_adc_amplitude
       desc:   Lowest value of the ADC
       access: RO

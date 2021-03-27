@@ -331,6 +331,45 @@ class osc0_duty_cycle_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
+// CPU LED
+// -----------------------------------------------------------------------------
+class cpu_led_reg extends uvm_reg;
+
+  `uvm_object_utils(cpu_led_reg)
+
+  rand uvm_reg_field cr_cpu_led;
+
+
+  function new (string name = "cpu_led_reg");
+    super.new(name, 1, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Turn on or off an LED
+    // -----------------------------------------------------------------------------
+    cr_cpu_led = uvm_reg_field::type_id::create("cr_cpu_led");
+    cr_cpu_led.configure(
+      .parent(this),
+      .size(1),
+      .lsb_pos(0),
+      .access("RW"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(1),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("cr_cpu_led", 0, 1);
+
+  endfunction
+
+endclass
+
+// -----------------------------------------------------------------------------
 // Lowest value of the ADC
 // -----------------------------------------------------------------------------
 class cir_min_adc_amplitude_reg extends uvm_reg;

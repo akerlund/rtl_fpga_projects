@@ -66,14 +66,16 @@ volatile int32_t tx_length;
 volatile int32_t tx_addr;
 volatile int16_t rx_crc_high;
 volatile int16_t rx_crc_low;
+volatile int32_t cpu_led;
+volatile int32_t led_counter;
 
 // Functions
 void     nops(uint32_t num);
 void     parse_uart_rx();
 void     isr_1(uint8_t *tx_buffer);
 void     handle_rx_data(uint8_t *buffer);
-void     axi_write(uint32_t baseaddr, uint32_t offset, int32_t value);
-uint32_t axi_read(uint32_t  baseaddr, uint32_t offset);
+void     axi_write(uint32_t addr, int32_t value);
+uint32_t axi_read(uint32_t addr);
 
 
 int main() {
@@ -92,20 +94,15 @@ int main() {
   is_parsing      = 0;
   rx_crc_enabled  = 1;
 
-  status = init_uart(XPAR_XUARTPS_0_DEVICE_ID);
+  cpu_led     = 0;
+  led_counter = 0;
 
-  if (status != XST_SUCCESS) {
-    xil_printf("%cERROR [uart] UART Initialization Failed\n", STR_C);
-    return XST_FAILURE;
-  } else {
-    xil_printf("%cINFO [uart] UART Operational 4\n", STR_C);
-  }
-
-  data = axi_read(FPGA_BASEADDR, 0);
-  xil_printf("%cHello World: %d\n", STR_C, data);
-
+  init_uart(XPAR_XUARTPS_0_DEVICE_ID);
   init_interrupt();
 
+  data = axi_read(HARDWARE_VERSION_ADDR);
+  xil_printf("%cHardware: %d\n", STR_C, data);
+  xil_printf("%cSoftware: %d\n", STR_C, 1);
 
   while (1) {
 
@@ -124,13 +121,22 @@ int main() {
     // Checking if data has been written to the UART RX buffer
     if (uart_rx_rd_addr != uart_rx_wr_addr && !is_parsing) {
     	is_parsing = 1;
-        parse_uart_rx();
-        is_parsing = 0;
+      xil_printf("%cINFO [main] RX Data\n", STR_C);
+      parse_uart_rx();
+      is_parsing = 0;
     }
 
     // Reset the RX write address to 0 if it has reached the high address
     if (uart_rx_wr_addr == UART_BUFFER_SIZE_C) {
       uart_rx_wr_addr = 0;
+    }
+
+    if (led_counter == 20000000) {
+      axi_write(CPU_LED_ADDR, cpu_led);
+      cpu_led     = ~cpu_led;
+      led_counter = 0;
+    } else {
+      led_counter++;
     }
   }
 
@@ -157,6 +163,8 @@ void parse_uart_rx() {
           rx_state = RX_LENGTH_LOW_E;
         } else if (rx_data == LENGTH_16_BITS_C) {
           rx_state = RX_LENGTH_HIGH_E;
+        } else {
+          xil_printf("%c[WARNING] rx_data = %d\n", STR_C, rx_data);
         }
         break;
 
@@ -169,7 +177,6 @@ void parse_uart_rx() {
 
 
       case RX_LENGTH_LOW_E:
-	    xil_printf("%cRX_LENGTH_LOW_E\r", STR_C);
 
         rx_length |= (uint32_t)rx_data;
 
@@ -231,38 +238,32 @@ void isr_1(uint8_t *tx_buffer) {
   uint32_t data;
   int32_t  index = 1;
   tx_buffer[0]  = SAMPLE_MIXER_LEFT_C;
-  data          = axi_read(FPGA_BASEADDR, MIX_OUT_LEFT_ADDR);
+  data          = axi_read(MIX_OUT_LEFT_ADDR);
   vector_append_uint32(tx_buffer, data, &index);
   XUartPs_Send(&Uart_PS, tx_buffer, 5);
 }
 
-
 void handle_rx_data(uint8_t *buffer) {
 
-  int32_t  index = 1;
   uint32_t data;
   uint32_t addr;
-
+  int32_t  index = 1;
 
   if (rx_buffer[0] == 'W' && rx_length == 9) {
     addr = vector_get_uint32(buffer, &index);
     data = vector_get_uint32(buffer, &index);
     xil_printf("%cINFO [rx] waddr(%u) wdata(%u)\r", STR_C, addr, data);
-    axi_write(FPGA_BASEADDR, addr, data);
-  }
+    axi_write(addr, data);
 
-  else if (rx_buffer[0] == 'R' && rx_length == 5) {
+  } else if (rx_buffer[0] == 'R' && rx_length == 5) {
+    addr = vector_get_uint32(buffer, &index);
+    data = axi_read(addr);
+    xil_printf("%cINFO [rx] raddr(%u) rdata(%d)\r", STR_C, addr, data);
 
-      addr = vector_get_uint32(buffer, &index);
-      data = axi_read(FPGA_BASEADDR, addr);
-      xil_printf("%cINFO [rx] raddr(%u) rdata(%d)\r", STR_C, addr, data);
-  }
-
-  else {
-      xil_printf("%cINFO [rx] Unknown\r", STR_C);
+  } else {
+    xil_printf("%cINFO [rx] Unknown\r", STR_C);
   }
 }
-
 
 void nops(uint32_t num) {
   for(int32_t i = 0; i < num; i++) {
@@ -270,14 +271,12 @@ void nops(uint32_t num) {
   }
 }
 
-
-
-void axi_write(uint32_t baseaddr, uint32_t offset, int32_t value){
-  Xil_Out32(baseaddr + offset, value);
+void axi_write(uint32_t addr, int32_t value){
+  Xil_Out32(addr, value);
 }
 
 
-uint32_t axi_read(uint32_t baseaddr, uint32_t offset){
-  return Xil_In32(baseaddr + offset);
+uint32_t axi_read(uint32_t addr){
+  return Xil_In32(addr);
 }
 

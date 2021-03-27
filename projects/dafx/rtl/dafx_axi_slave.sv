@@ -39,6 +39,7 @@ module dafx_axi_slave #(
     output logic               [1 : 0] cr_osc0_waveform_select,
     output logic      [N_BITS_C-1 : 0] cr_osc0_frequency,
     output logic      [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
+    output logic                       cr_cpu_led,
     input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
     input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
     input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
@@ -103,6 +104,7 @@ module dafx_axi_slave #(
       cr_osc0_waveform_select <= 0;
       cr_osc0_frequency       <= 500<<Q_BITS_C;
       cr_osc0_duty_cycle      <= 500;
+      cr_cpu_led              <= 1;
       cmd_clear_irq_0         <= 0;
       cmd_clear_irq_1         <= 0;
 
@@ -188,6 +190,10 @@ module dafx_axi_slave #(
 
               OSC0_DUTY_CYCLE_ADDR: begin
                 cr_osc0_duty_cycle <= cif.wdata[N_BITS_C-1 : 0];
+              end
+
+              CPU_LED_ADDR: begin
+                cr_cpu_led <= cif.wdata[0];
               end
 
               CLEAR_ADC_AMPLITUDE_ADDR: begin
@@ -316,6 +322,10 @@ module dafx_axi_slave #(
 
       OSC0_DUTY_CYCLE_ADDR: begin
         cif.rdata[N_BITS_C-1 : 0] = cr_osc0_duty_cycle;
+      end
+
+      CPU_LED_ADDR: begin
+        cif.rdata[0] = cr_cpu_led;
       end
 
       CIR_MIN_ADC_AMPLITUDE_ADDR: begin

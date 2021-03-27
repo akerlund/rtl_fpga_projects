@@ -105,6 +105,8 @@ module dafx_core #(
   logic            [N_BITS_C-1 : 0] cr_osc0_frequency;
   logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle;
 
+  logic cr_cpu_led;
+
   // Mixer assignments
   assign fs_strobe              = cs_adc_valid && cs_adc_ready && cs_adc_last;
   assign mix_channel_data[2]    = osc_waveform >>> 2;
@@ -155,7 +157,6 @@ module dafx_core #(
     end
   end
 
-
   // IRQ 1
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -169,6 +170,15 @@ module dafx_core #(
       end else begin
         irq_1_counter <= irq_1_counter + 1;
       end
+    end
+  end
+
+  // CPU LED process
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      led_2 <= '0;
+    end else begin
+      led_2 <= cr_cpu_led;
     end
   end
 
@@ -220,6 +230,7 @@ module dafx_core #(
     .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
     .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
     .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
+    .cr_cpu_led               ( cr_cpu_led                ), // output
     .sr_cir_min_adc_amplitude ( '0                        ), // input
     .sr_cir_max_adc_amplitude ( '0                        ), // input
     .sr_cir_min_dac_amplitude ( -sr_mix_min_dac_amplitude ), // input

@@ -30,6 +30,7 @@ class dafx_block extends uvm_reg_block;
   rand osc0_waveform_select_reg osc0_waveform_select;
   rand osc0_frequency_reg osc0_frequency;
   rand osc0_duty_cycle_reg osc0_duty_cycle;
+  rand cpu_led_reg cpu_led;
   rand cir_min_adc_amplitude_reg cir_min_adc_amplitude;
   rand cir_max_adc_amplitude_reg cir_max_adc_amplitude;
   rand cir_min_dac_amplitude_reg cir_min_dac_amplitude;
@@ -80,6 +81,10 @@ class dafx_block extends uvm_reg_block;
     osc0_duty_cycle.build();
     osc0_duty_cycle.configure(this);
 
+    cpu_led = cpu_led_reg::type_id::create("cpu_led");
+    cpu_led.build();
+    cpu_led.configure(this);
+
     cir_min_adc_amplitude = cir_min_adc_amplitude_reg::type_id::create("cir_min_adc_amplitude");
     cir_min_adc_amplitude.build();
     cir_min_adc_amplitude.configure(this);
@@ -128,15 +133,16 @@ class dafx_block extends uvm_reg_block;
     default_map.add_reg(osc0_waveform_select, 40, "RW");
     default_map.add_reg(osc0_frequency, 48, "RW");
     default_map.add_reg(osc0_duty_cycle, 56, "RW");
-    default_map.add_reg(cir_min_adc_amplitude, 64, "RO");
-    default_map.add_reg(cir_max_adc_amplitude, 72, "RO");
-    default_map.add_reg(cir_min_dac_amplitude, 80, "RO");
-    default_map.add_reg(cir_max_dac_amplitude, 88, "RO");
-    default_map.add_reg(clear_adc_amplitude, 96, "WO");
-    default_map.add_reg(clear_irq_0, 104, "WO");
-    default_map.add_reg(clear_irq_1, 112, "WO");
-    default_map.add_reg(mix_out_left, 120, "RO");
-    default_map.add_reg(mix_out_right, 128, "RO");
+    default_map.add_reg(cpu_led, 64, "RW");
+    default_map.add_reg(cir_min_adc_amplitude, 72, "RO");
+    default_map.add_reg(cir_max_adc_amplitude, 80, "RO");
+    default_map.add_reg(cir_min_dac_amplitude, 88, "RO");
+    default_map.add_reg(cir_max_dac_amplitude, 96, "RO");
+    default_map.add_reg(clear_adc_amplitude, 104, "WO");
+    default_map.add_reg(clear_irq_0, 112, "WO");
+    default_map.add_reg(clear_irq_1, 120, "WO");
+    default_map.add_reg(mix_out_left, 128, "RO");
+    default_map.add_reg(mix_out_right, 136, "RO");
 
 
     lock_model();

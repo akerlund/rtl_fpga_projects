@@ -22,10 +22,11 @@
 #ifndef QHOST_DEFINES_H
 #define QHOST_DEFINES_H
 
-  #define LENGTH_8_BITS_C      0xAA
-  #define LENGTH_16_BITS_C     0x55
+  #define LENGTH_8_BITS_C      0x1A
+  #define LENGTH_16_BITS_C     0x15
   #define CRC_ENABLED_BIT_C    0x80
-  #define STRING_C             0x50
+  #define STRING_C             0x40
+
   #define SAMPLE_MIXER_LEFT_C  0x51
   #define SAMPLE_MIXER_RIGHT_C 0x52
 

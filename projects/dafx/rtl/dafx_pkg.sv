@@ -37,8 +37,8 @@ package dafx_pkg;
   localparam int AXI_STRB_WIDTH_C = AXI_DATA_WIDTH_C/8;
 
   // Common
+  localparam logic [63 : 0] SR_HARDWARE_VERSION_C = 1818;
   localparam int            SYS_CLK_FREQUENCY_C   = 125000000;
-  localparam logic [63 : 0] SR_HARDWARE_VERSION_C = 0858;
   localparam int            NR_OF_MASTERS_C       = 2;
   localparam int            AUDIO_WIDTH_C         = 24;
   localparam int            GAIN_WIDTH_C          = 24;
