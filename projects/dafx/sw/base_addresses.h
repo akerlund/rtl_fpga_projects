@@ -1,7 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2020 Fredrik Åkerlund
-// https://github.com/akerlund/FPGA
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,25 +18,16 @@
 // Description:
 //
 ////////////////////////////////////////////////////////////////////////////////
+#ifndef BASE_ADDRESSES_H
+#define BASE_ADDRESSES_H
 
-#ifndef CFG_ADDR_MAP_H
-#define CFG_ADDR_MAP_H
+  // Physical Address of the FPGA's AXI Configuration Bus
+  #define CFG_BASE_ADDR_C  0x000000000
 
-// AXI addresses to the FPGA
-#define FPGA_BASEADDR           0x43C00000
+  // Base Addresses of the Slaves
+  #define DAFX_BASE_ADDRESS_C  0x000000
 
-#define LED_0_ADDR              0  // 0
-#define IRQ_CLEAR_ADDR          4  // 1
-#define MIX_OUTPUT_GAIN         8  // 2
-#define MIX_CHANNEL_GAIN_0      12 // 3
-#define MIX_CHANNEL_GAIN_1      16 // 4
-#define CIR_CLEAR_MAX           20 // 5
-#define CIR_MAX_AMPLITUDE       24 // 6
-#define CIR_MIN_AMPLITUDE       28 // 7
-#define CR_OSC0_WAVEFORM_SELECT 32 // 8
-#define CR_OSC0_FREQUENCY       36 // 9
-#define CR_OSC0_DUTY_CYCLE      40 // 10
-
-
+  // Physical Addresses for Users
+  #define DAFX_PHYSICAL_ADDRESS_C (CFG_BASE_ADDR_C + DAFX_BASE_ADDRESS_C)
 
 #endif

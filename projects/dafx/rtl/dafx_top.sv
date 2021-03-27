@@ -41,9 +41,23 @@ module dafx_top #(
     input  wire                               clk,
     input  wire                               rst_n,
 
-    // ---------------------------------------------------------------------------
+    // Cirrus CS5343 ADC/DAC
+    output logic                              cs_tx_mclk,
+    output logic                              cs_tx_lrck,
+    output logic                              cs_tx_sclk,
+    output logic                              cs_tx_sdout,
+    output logic                              cs_rx_mclk,
+    output logic                              cs_rx_lrck,
+    output logic                              cs_rx_sclk,
+    input  wire                               cs_rx_sdin,
+
+    // IRQ
+    output logic                              irq_0,
+    output logic                              irq_1,
+
+    // -------------------------------------------------------------------------
     // PL I/O
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     // Arty Z7 LEDS
     output logic                              led_0,
@@ -61,12 +75,9 @@ module dafx_top #(
     input  wire                               sw_0,
     input  wire                               sw_1,
 
-    output logic                              irq_0,
-    output logic                              irq_1,
-
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // PL register AXI4 ports
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     // Write Address Channel
     input  wire      [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
@@ -98,9 +109,9 @@ module dafx_top #(
     output logic                              cfg_rvalid,
     input  wire                               cfg_rready,
 
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     // Memory Controller AXI4 ports
-    // ---------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
 
     // Write Address Channel
     output logic        [MC_ID_WIDTH_P-1 : 0] mc_awid,
@@ -143,17 +154,7 @@ module dafx_top #(
     input  wire       [MC_DATA_WIDTH_P-1 : 0] mc_rdata,
     input  wire                               mc_rlast,
     input  wire                               mc_rvalid,
-    output logic                              mc_rready,
-
-    // Cirrus CS5343 ADC/DAC
-    output logic                              cs_tx_mclk,
-    output logic                              cs_tx_lrck,
-    output logic                              cs_tx_sclk,
-    output logic                              cs_tx_sdout,
-    output logic                              cs_rx_mclk,
-    output logic                              cs_rx_lrck,
-    output logic                              cs_rx_sclk,
-    input  wire                               cs_rx_sdin
+    output logic                              mc_rready
   );
 
   logic clk_mclk;
@@ -220,14 +221,56 @@ module dafx_top #(
   assign cfg_rvalid  = dafx_cfg_if.rvalid;
   assign dafx_cfg_if.rready  = cfg_rready;
 
+  //----------------------------------------------------------------------------
+  // Memory Controller
+  //----------------------------------------------------------------------------
+
+  axi4_if #(
+    .ID_WIDTH_P   ( MC_ID_WIDTH_P   ),
+    .ADDR_WIDTH_P ( MC_ADDR_WIDTH_P ),
+    .DATA_WIDTH_P ( MC_DATA_WIDTH_P )
+  ) axi4_if0 ();
+
+  // Write Address Channel
+  assign mc_awaddr        = axi4_if0.awaddr;
+  assign mc_awvalid       = axi4_if0.awvalid;
+  assign axi4_if0.awready = mc_awready;
+
+  // Write Data Channel
+  assign mc_wdata         = axi4_if0.wdata;
+  assign mc_wstrb         = axi4_if0.wstrb;
+  assign mc_wlast         = axi4_if0.wlast;
+  assign mc_wvalid        = axi4_if0.wvalid;
+  assign axi4_if0.wready  = mc_wready;
+
+  // Write Response Channel
+  assign axi4_if0.bresp   = mc_bresp;
+  assign axi4_if0.bvalid  = mc_bvalid;
+  assign mc_bready        = axi4_if0.bready;
+
+  // Read Address Channel
+  assign mc_araddr        = axi4_if0.araddr;
+  assign mc_arlen         = axi4_if0.arlen;
+  assign mc_arvalid       = axi4_if0.arvalid;
+  assign axi4_if0.arready = mc_arready;
+
+  // Read Data Channel
+  assign axi4_if0.rdata   = mc_rdata;
+  assign axi4_if0.rresp   = mc_rresp;
+  assign axi4_if0.rlast   = mc_rlast;
+  assign axi4_if0.rvalid  = mc_rvalid;
+  assign mc_rready        = axi4_if0.rready;
+
+
+
 
   // Clock 'clk_sys' (125MHz) with LED process
-  always_ff @(posedge clk or negedge rst_n) begin : led_blink_p0
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       led_3         <= '0;
       led_3_counter <= '0;
     end else begin
-      if (led_3_counter == 62500000-1) begin
+      if (led_3_counter == SYS_CLK_FREQUENCY_C/2-1) begin
         led_3         <= ~led_3;
         led_3_counter <= 0;
       end else begin

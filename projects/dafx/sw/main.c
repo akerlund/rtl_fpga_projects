@@ -26,6 +26,7 @@
 #include "xuartps.h"
 #include "xparameters.h"
 #include "crc_16.h"
+#include "base_addresses.h"
 #include "dafx_address.h"
 #include "qhost_defines.h"
 #include "init_ps.h"
@@ -230,7 +231,7 @@ void isr_1(uint8_t *tx_buffer) {
   uint32_t data;
   int32_t  index = 1;
   tx_buffer[0]  = SAMPLE_MIXER_LEFT_C;
-  data          = axi_read(FPGA_BASEADDR, DAFX_MIX_OUT_LEFT_ADDR);
+  data          = axi_read(FPGA_BASEADDR, MIX_OUT_LEFT_ADDR);
   vector_append_uint32(tx_buffer, data, &index);
   XUartPs_Send(&Uart_PS, tx_buffer, 5);
 }

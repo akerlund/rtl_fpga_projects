@@ -40,50 +40,44 @@ module dafx_core #(
   )(
 
     // Clock and reset
-    input  wire                                   clk,
-    input  wire                                   rst_n,
-    input  wire                                   clk_mclk,
-    input  wire                                   rst_mclk_n,
-    axi4_reg_if.slave                             dafx_cfg_if,
+    input  wire                 clk,
+    input  wire                 rst_n,
+    input  wire                 clk_mclk,
+    input  wire                 rst_mclk_n,
+    axi4_reg_if.slave           dafx_cfg_if,
 
     // Cirrus CS5343 ADC/DAC
-    input  wire                          [23 : 0] cs_adc_data,
-    input  wire                                   cs_adc_valid,
-    output logic                                  cs_adc_ready,
-    input  wire                                   cs_adc_last,
-    output logic                         [23 : 0] cs_dac_data,
-    output logic                                  cs_dac_valid,
-    input  wire                                   cs_dac_ready,
-    output logic                                  cs_dac_last,
+    input  wire        [23 : 0] cs_adc_data,
+    input  wire                 cs_adc_valid,
+    output logic                cs_adc_ready,
+    input  wire                 cs_adc_last,
+    output logic       [23 : 0] cs_dac_data,
+    output logic                cs_dac_valid,
+    input  wire                 cs_dac_ready,
+    output logic                cs_dac_last,
 
     // ---------------------------------------------------------------------------
     // PL I/O
     // ---------------------------------------------------------------------------
 
     // Arty Z7 LEDS
-    output logic                                  led_0,
-    output logic                                  led_1,
-    output logic                                  led_2,
+    output logic                led_0,
+    output logic                led_1,
+    output logic                led_2,
 
     // Arty Z7 buttons
-    input  wire                                   btn_0,
-    input  wire                                   btn_1,
-    input  wire                                   btn_2,
-    input  wire                                   btn_3,
+    input  wire                 btn_0,
+    input  wire                 btn_1,
+    input  wire                 btn_2,
+    input  wire                 btn_3,
 
     // Arty Z7 switches
-    input  wire                                   sw_0,
-    input  wire                                   sw_1,
+    input  wire                 sw_0,
+    input  wire                 sw_1,
 
-    output logic                                  irq_0,
-    output logic                                  irq_1
+    output logic                irq_0,
+    output logic                irq_1
   );
-
-  axi4_if #(
-    .ID_WIDTH_P   ( MC_ID_WIDTH_P   ),
-    .ADDR_WIDTH_P ( MC_ADDR_WIDTH_P ),
-    .DATA_WIDTH_P ( MC_DATA_WIDTH_P )
-  ) axi4_if0 ();
 
   logic                          cmd_clear_irq_0;
   logic [AXI_DATA_WIDTH_P-1 : 0] irq_0_counter;

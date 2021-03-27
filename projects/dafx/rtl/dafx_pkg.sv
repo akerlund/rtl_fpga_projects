@@ -38,7 +38,7 @@ package dafx_pkg;
 
   // Common
   localparam int            SYS_CLK_FREQUENCY_C   = 125000000;
-  localparam logic [63 : 0] SR_HARDWARE_VERSION_C = 2012;
+  localparam logic [63 : 0] SR_HARDWARE_VERSION_C = 0858;
   localparam int            NR_OF_MASTERS_C       = 2;
   localparam int            AUDIO_WIDTH_C         = 24;
   localparam int            GAIN_WIDTH_C          = 24;

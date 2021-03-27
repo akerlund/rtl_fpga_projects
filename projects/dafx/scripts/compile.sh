@@ -42,7 +42,6 @@ source $git_sub_root/submodules/VIP/report_server/files.lst
 git_root="$(git rev-parse --show-toplevel)/submodules/PYRG"
 source $git_sub_root/submodules/PYRG/rtl/files.lst
 
-
 # ------------------------------------------------------------------------------
 # Source modules
 # ------------------------------------------------------------------------------
@@ -57,17 +56,22 @@ source ./rtl/files.lst
 source ./tb/files.lst
 source ./sw/files.lst
 
+# ------------------------------------------------------------------------------
 # Parameter override
+# ------------------------------------------------------------------------------
 parameters+=(" ")
 
+# ------------------------------------------------------------------------------
 # FPGA
+# ------------------------------------------------------------------------------
 VITIS_DIR="/opt/Xilinx/Vitis/2020.1"
-JTAG_NAME="__TODO__"
+JTAG_NAME="{jtag_cable_name =~ \"Digilent Arty Z7 003017A6FCE4A\" && level==0 && jtag_device_ctx==\"jsn-Arty Z7-003017A6FCE4A-23727093-0\"}"
 PLATFORM_NAME="the_platform"
 APP_NAME="dafx"
 DOMAIN_NAME="domain_ps7_cortexa9_0"
 PROCESSOR="ps7_cortexa9_0"
-XSA_FILE="zc702"
-BIT_FILE="__TODO__"
-FSBL_FILE="__TODO__"
-APP_ELF_FILE="__TODO__"
+
+XSA_FILE="$git_root/projects/dafx/rundir/vivado/dafx/bd_design_0_wrapper.xsa"
+BIT_FILE="$git_root/projects/dafx/rundir/vivado/dafx/dafx.runs/impl_1/bd_design_0_wrapper.bit"
+FSBL_FILE="$git_root/projects/dafx/rundir/xsct/the_platform/export/the_platform/sw/the_platform/boot/fsbl.elf"
+APP_ELF_FILE="$git_root/projects/dafx/rundir/xsct/dafx/Debug/dafx.elf"
