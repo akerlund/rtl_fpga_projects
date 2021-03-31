@@ -1,6 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Copyright (C) 2020 Fredrik Åkerlund
+// https://github.com/akerlund/PYRG
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -104,7 +105,7 @@ module dafx_axi_slave #(
       cr_osc0_waveform_select <= 0;
       cr_osc0_frequency       <= 500<<Q_BITS_C;
       cr_osc0_duty_cycle      <= 500;
-      cr_cpu_led              <= 1;
+      cr_cpu_led              <= 0;
       cmd_clear_irq_0         <= 0;
       cmd_clear_irq_1         <= 0;
 
