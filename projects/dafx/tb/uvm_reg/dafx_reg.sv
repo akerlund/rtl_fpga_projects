@@ -137,7 +137,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 1
+// Mixer's input gain of channel 0
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_1_reg extends uvm_reg;
 
@@ -155,7 +155,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 1
+    // Mixer's input gain of channel 0
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_1 = uvm_reg_field::type_id::create("cr_mix_channel_gain_1");
     cr_mix_channel_gain_1.configure(
@@ -176,7 +176,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 2
+// Mixer's input gain of channel 0
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_2_reg extends uvm_reg;
 
@@ -194,7 +194,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 2
+    // Mixer's input gain of channel 0
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_2 = uvm_reg_field::type_id::create("cr_mix_channel_gain_2");
     cr_mix_channel_gain_2.configure(
@@ -209,6 +209,45 @@ class mixer_channel_gain_2_reg extends uvm_reg;
       .individually_accessible(0)
     );
     add_hdl_path_slice("cr_mix_channel_gain_2", 0, GAIN_WIDTH_C);
+
+  endfunction
+
+endclass
+
+// -----------------------------------------------------------------------------
+// Mixer's input gain of channel 0
+// -----------------------------------------------------------------------------
+class mixer_channel_gain_3_reg extends uvm_reg;
+
+  `uvm_object_utils(mixer_channel_gain_3_reg)
+
+  rand uvm_reg_field cr_mix_channel_gain_3;
+
+
+  function new (string name = "mixer_channel_gain_3_reg");
+    super.new(name, GAIN_WIDTH_C, UVM_NO_COVERAGE);
+  endfunction
+
+
+  function void build();
+
+
+    // -----------------------------------------------------------------------------
+    // Mixer's input gain of channel 0
+    // -----------------------------------------------------------------------------
+    cr_mix_channel_gain_3 = uvm_reg_field::type_id::create("cr_mix_channel_gain_3");
+    cr_mix_channel_gain_3.configure(
+      .parent(this),
+      .size(GAIN_WIDTH_C),
+      .lsb_pos(0),
+      .access("RW"),
+      .volatile(0),
+      .reset(1<<Q_BITS_C),
+      .has_reset(1),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("cr_mix_channel_gain_3", 0, GAIN_WIDTH_C);
 
   endfunction
 
@@ -338,11 +377,12 @@ class cpu_led_reg extends uvm_reg;
 
   `uvm_object_utils(cpu_led_reg)
 
-  rand uvm_reg_field cr_cpu_led;
+  rand uvm_reg_field cr_cpu_led0;
+  rand uvm_reg_field cr_cpu_led1;
 
 
   function new (string name = "cpu_led_reg");
-    super.new(name, 1, UVM_NO_COVERAGE);
+    super.new(name, 1+1, UVM_NO_COVERAGE);
   endfunction
 
 
@@ -352,8 +392,8 @@ class cpu_led_reg extends uvm_reg;
     // -----------------------------------------------------------------------------
     // Turn on or off an LED
     // -----------------------------------------------------------------------------
-    cr_cpu_led = uvm_reg_field::type_id::create("cr_cpu_led");
-    cr_cpu_led.configure(
+    cr_cpu_led0 = uvm_reg_field::type_id::create("cr_cpu_led0");
+    cr_cpu_led0.configure(
       .parent(this),
       .size(1),
       .lsb_pos(0),
@@ -364,7 +404,24 @@ class cpu_led_reg extends uvm_reg;
       .is_rand(0),
       .individually_accessible(0)
     );
-    add_hdl_path_slice("cr_cpu_led", 0, 1);
+    add_hdl_path_slice("cr_cpu_led0", 0, 1);
+
+    // -----------------------------------------------------------------------------
+    // Turn on or off an LED
+    // -----------------------------------------------------------------------------
+    cr_cpu_led1 = uvm_reg_field::type_id::create("cr_cpu_led1");
+    cr_cpu_led1.configure(
+      .parent(this),
+      .size(1),
+      .lsb_pos(1),
+      .access("RW"),
+      .volatile(0),
+      .reset(0),
+      .has_reset(1),
+      .is_rand(0),
+      .individually_accessible(0)
+    );
+    add_hdl_path_slice("cr_cpu_led1", 0, 1);
 
   endfunction
 

@@ -3,6 +3,10 @@ dafx:
 
   bus_width: 64
 
+  rtl_path: "$GIT_ROOT/projects/dafx/rtl"
+  uvm_path: "$GIT_ROOT/projects/dafx/tb/uvm_reg"
+  sw_path:  "$GIT_ROOT/projects/dafx/sw"
+
   parameters:
     - GAIN_WIDTH_C
     - N_BITS_C
@@ -34,37 +38,14 @@ dafx:
           reset_value: 1<<Q_BITS_C
         }
 
-    - name:   mixer_channel_gain_0
+    - name:   mixer_channel_gain
       desc:   Mixer's input gain of channel 0
       access: RW
+      repeat: 4
       bit_fields:
         - field: {
-          name:        cr_mix_channel_gain_0,
+          name:        cr_mix_channel_gain,
           description: Mixer's input gain of channel 0,
-          size:        GAIN_WIDTH_C,
-          lsb_pos:     0,
-          reset_value: 1<<Q_BITS_C
-        }
-
-    - name:   mixer_channel_gain_1
-      desc:   Mixer's input gain of channel 1
-      access: RW
-      bit_fields:
-        - field: {
-          name:        cr_mix_channel_gain_1,
-          description: Mixer's input gain of channel 1,
-          size:        GAIN_WIDTH_C,
-          lsb_pos:     0,
-          reset_value: 1<<Q_BITS_C
-        }
-
-    - name:   mixer_channel_gain_2
-      desc:   Mixer's input gain of channel 2
-      access: RW
-      bit_fields:
-        - field: {
-          name:        cr_mix_channel_gain_2,
-          description: Mixer's input gain of channel 2,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1<<Q_BITS_C
@@ -111,10 +92,17 @@ dafx:
       access: RW
       bit_fields:
         - field: {
-          name:        cr_cpu_led,
+          name:        cr_cpu_led0,
           description: Turn on or off an LED,
           size:        1,
           lsb_pos:     0,
+          reset_value: 0
+        }
+        - field: {
+          name:        cr_cpu_led1,
+          description: Turn on or off an LED,
+          size:        1,
+          lsb_pos:     1,
           reset_value: 0
         }
 

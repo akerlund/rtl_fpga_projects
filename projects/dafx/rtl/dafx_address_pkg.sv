@@ -25,25 +25,26 @@
 
 package dafx_address_pkg;
 
-  localparam logic [15 : 0] DAFX_HIGH_ADDRESS          = 16'h0090;
+  localparam logic [15 : 0] DAFX_HIGH_ADDRESS          = 16'h0098;
   localparam logic [15 : 0] HARDWARE_VERSION_ADDR      = 16'h0000;
   localparam logic [15 : 0] MIXER_OUTPUT_GAIN_ADDR     = 16'h0008;
   localparam logic [15 : 0] MIXER_CHANNEL_GAIN_0_ADDR  = 16'h0010;
   localparam logic [15 : 0] MIXER_CHANNEL_GAIN_1_ADDR  = 16'h0018;
   localparam logic [15 : 0] MIXER_CHANNEL_GAIN_2_ADDR  = 16'h0020;
-  localparam logic [15 : 0] OSC0_WAVEFORM_SELECT_ADDR  = 16'h0028;
-  localparam logic [15 : 0] OSC0_FREQUENCY_ADDR        = 16'h0030;
-  localparam logic [15 : 0] OSC0_DUTY_CYCLE_ADDR       = 16'h0038;
-  localparam logic [15 : 0] CPU_LED_ADDR               = 16'h0040;
-  localparam logic [15 : 0] CIR_MIN_ADC_AMPLITUDE_ADDR = 16'h0048;
-  localparam logic [15 : 0] CIR_MAX_ADC_AMPLITUDE_ADDR = 16'h0050;
-  localparam logic [15 : 0] CIR_MIN_DAC_AMPLITUDE_ADDR = 16'h0058;
-  localparam logic [15 : 0] CIR_MAX_DAC_AMPLITUDE_ADDR = 16'h0060;
-  localparam logic [15 : 0] CLEAR_ADC_AMPLITUDE_ADDR   = 16'h0068;
-  localparam logic [15 : 0] CLEAR_IRQ_0_ADDR           = 16'h0070;
-  localparam logic [15 : 0] CLEAR_IRQ_1_ADDR           = 16'h0078;
-  localparam logic [15 : 0] MIX_OUT_LEFT_ADDR          = 16'h0080;
-  localparam logic [15 : 0] MIX_OUT_RIGHT_ADDR         = 16'h0088;
+  localparam logic [15 : 0] MIXER_CHANNEL_GAIN_3_ADDR  = 16'h0028;
+  localparam logic [15 : 0] OSC0_WAVEFORM_SELECT_ADDR  = 16'h0030;
+  localparam logic [15 : 0] OSC0_FREQUENCY_ADDR        = 16'h0038;
+  localparam logic [15 : 0] OSC0_DUTY_CYCLE_ADDR       = 16'h0040;
+  localparam logic [15 : 0] CPU_LED_ADDR               = 16'h0048;
+  localparam logic [15 : 0] CIR_MIN_ADC_AMPLITUDE_ADDR = 16'h0050;
+  localparam logic [15 : 0] CIR_MAX_ADC_AMPLITUDE_ADDR = 16'h0058;
+  localparam logic [15 : 0] CIR_MIN_DAC_AMPLITUDE_ADDR = 16'h0060;
+  localparam logic [15 : 0] CIR_MAX_DAC_AMPLITUDE_ADDR = 16'h0068;
+  localparam logic [15 : 0] CLEAR_ADC_AMPLITUDE_ADDR   = 16'h0070;
+  localparam logic [15 : 0] CLEAR_IRQ_0_ADDR           = 16'h0078;
+  localparam logic [15 : 0] CLEAR_IRQ_1_ADDR           = 16'h0080;
+  localparam logic [15 : 0] MIX_OUT_LEFT_ADDR          = 16'h0088;
+  localparam logic [15 : 0] MIX_OUT_RIGHT_ADDR         = 16'h0090;
 
 endpackage
 
