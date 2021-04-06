@@ -39,37 +39,37 @@ dafx:
         }
 
     - name:   mixer_channel_gain
-      desc:   Mixer's input gain of channel 0
+      desc:   Mixer's input gain of the channels
       access: RW
       repeat: 4
       bit_fields:
         - field: {
           name:        cr_mix_channel_gain,
-          description: Mixer's input gain of channel 0,
+          description: Mixer's input gain of the channels,
           size:        GAIN_WIDTH_C,
           lsb_pos:     0,
           reset_value: 1<<Q_BITS_C
         }
 
     - name:   osc0_waveform_select
-      desc:   Sets the waveform output of oscillator 0
+      desc:   Sets the waveform output
       access: RW
       bit_fields:
         - field: {
           name:        cr_osc0_waveform_select,
-          description: Sets the waveform output of oscillator 0,
+          description: Sets the waveform output,
           size:        2,
           lsb_pos:     0,
           reset_value: 0x0
         }
 
     - name:   osc0_frequency
-      desc:   Sets the frequency of oscillator 0
+      desc:   Sets the frequency
       access: RW
       bit_fields:
         - field: {
           name:        cr_osc0_frequency,
-          description: Sets the frequency of oscillator 0,
+          description: Sets the frequency,
           size:        N_BITS_C,
           lsb_pos:     0,
           reset_value: 500<<Q_BITS_C

@@ -32,23 +32,23 @@ module dafx_axi_slave #(
     parameter int Q_BITS_C = -1
   )(
     axi4_reg_if.slave cif,
-    input  wire               [63 : 0] sr_hardware_version,
-    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
-    output logic  [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain,
-    output logic               [1 : 0] cr_osc0_waveform_select,
-    output logic      [N_BITS_C-1 : 0] cr_osc0_frequency,
-    output logic      [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
-    output logic                       cr_cpu_led0,
-    output logic                       cr_cpu_led1,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
-    output logic                       cmd_clear_adc_amplitude,
-    output logic                       cmd_clear_irq_0,
-    output logic                       cmd_clear_irq_1,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
-    input  wire  [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
+    input  wire                      [63 : 0] sr_hardware_version,
+    output logic         [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
+    output logic [3 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain,
+    output logic                      [1 : 0] cr_osc0_waveform_select,
+    output logic             [N_BITS_C-1 : 0] cr_osc0_frequency,
+    output logic             [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
+    output logic                              cr_cpu_led0,
+    output logic                              cr_cpu_led1,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
+    output logic                              cmd_clear_adc_amplitude,
+    output logic                              cmd_clear_irq_0,
+    output logic                              cmd_clear_irq_1,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
+    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
   );
 
   localparam logic [1 : 0] AXI_RESP_SLVERR_C = 2'b01;

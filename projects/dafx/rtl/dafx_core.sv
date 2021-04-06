@@ -108,11 +108,11 @@ module dafx_core #(
   logic cr_cpu_led;
 
   // Mixer assignments
-  assign fs_strobe              = cs_adc_valid && cs_adc_ready && cs_adc_last;
-  assign mix_channel_data[2]    = osc_waveform >>> 2;
-  assign cr_mix_channel_gain[0] = cr_mix_channel_gain_0;
-  assign cr_mix_channel_gain[1] = cr_mix_channel_gain_1;
-  assign cr_mix_channel_gain[2] = cr_mix_channel_gain_2;
+  assign fs_strobe             = cs_adc_valid && cs_adc_ready && cs_adc_last;
+  assign mix_channel_data[2]   = osc_waveform >>> 2;
+  assign cr_mix_channel_gain_0 = cr_mix_channel_gain[0];
+  assign cr_mix_channel_gain_1 = cr_mix_channel_gain[1];
+  assign cr_mix_channel_gain_2 = cr_mix_channel_gain[2];
 
   // ADC to mixer channels
   always_ff @(posedge clk or negedge rst_n) begin
@@ -224,13 +224,12 @@ module dafx_core #(
     .cif                      ( dafx_cfg_if               ), // modport
     .sr_hardware_version      ( SR_HARDWARE_VERSION_C     ), // input
     .cr_mix_output_gain       ( cr_mix_output_gain        ), // output
-    .cr_mix_channel_gain_0    ( cr_mix_channel_gain_0     ), // output
-    .cr_mix_channel_gain_1    ( cr_mix_channel_gain_1     ), // output
-    .cr_mix_channel_gain_2    ( cr_mix_channel_gain_2     ), // output
+    .cr_mix_channel_gain      ( cr_mix_channel_gain       ), // output
     .cr_osc0_waveform_select  ( cr_osc0_waveform_select   ), // output
     .cr_osc0_frequency        ( cr_osc0_frequency         ), // output
     .cr_osc0_duty_cycle       ( cr_osc0_duty_cycle        ), // output
-    .cr_cpu_led               ( cr_cpu_led                ), // output
+    .cr_cpu_led0              ( cr_cpu_led                ), // output
+    .cr_cpu_led1              (                           ), // output
     .sr_cir_min_adc_amplitude ( '0                        ), // input
     .sr_cir_max_adc_amplitude ( '0                        ), // input
     .sr_cir_min_dac_amplitude ( -sr_mix_min_dac_amplitude ), // input

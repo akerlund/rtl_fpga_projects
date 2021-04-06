@@ -98,7 +98,7 @@ class mixer_output_gain_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 0
+// Mixer's input gain of the channels
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_0_reg extends uvm_reg;
 
@@ -116,7 +116,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 0
+    // Mixer's input gain of the channels
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_0 = uvm_reg_field::type_id::create("cr_mix_channel_gain_0");
     cr_mix_channel_gain_0.configure(
@@ -137,7 +137,7 @@ class mixer_channel_gain_0_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 0
+// Mixer's input gain of the channels
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_1_reg extends uvm_reg;
 
@@ -155,7 +155,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 0
+    // Mixer's input gain of the channels
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_1 = uvm_reg_field::type_id::create("cr_mix_channel_gain_1");
     cr_mix_channel_gain_1.configure(
@@ -176,7 +176,7 @@ class mixer_channel_gain_1_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 0
+// Mixer's input gain of the channels
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_2_reg extends uvm_reg;
 
@@ -194,7 +194,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 0
+    // Mixer's input gain of the channels
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_2 = uvm_reg_field::type_id::create("cr_mix_channel_gain_2");
     cr_mix_channel_gain_2.configure(
@@ -215,7 +215,7 @@ class mixer_channel_gain_2_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Mixer's input gain of channel 0
+// Mixer's input gain of the channels
 // -----------------------------------------------------------------------------
 class mixer_channel_gain_3_reg extends uvm_reg;
 
@@ -233,7 +233,7 @@ class mixer_channel_gain_3_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Mixer's input gain of channel 0
+    // Mixer's input gain of the channels
     // -----------------------------------------------------------------------------
     cr_mix_channel_gain_3 = uvm_reg_field::type_id::create("cr_mix_channel_gain_3");
     cr_mix_channel_gain_3.configure(
@@ -254,7 +254,7 @@ class mixer_channel_gain_3_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Sets the waveform output of oscillator 0
+// Sets the waveform output
 // -----------------------------------------------------------------------------
 class osc0_waveform_select_reg extends uvm_reg;
 
@@ -272,7 +272,7 @@ class osc0_waveform_select_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Sets the waveform output of oscillator 0
+    // Sets the waveform output
     // -----------------------------------------------------------------------------
     cr_osc0_waveform_select = uvm_reg_field::type_id::create("cr_osc0_waveform_select");
     cr_osc0_waveform_select.configure(
@@ -293,7 +293,7 @@ class osc0_waveform_select_reg extends uvm_reg;
 endclass
 
 // -----------------------------------------------------------------------------
-// Sets the frequency of oscillator 0
+// Sets the frequency
 // -----------------------------------------------------------------------------
 class osc0_frequency_reg extends uvm_reg;
 
@@ -311,7 +311,7 @@ class osc0_frequency_reg extends uvm_reg;
 
 
     // -----------------------------------------------------------------------------
-    // Sets the frequency of oscillator 0
+    // Sets the frequency
     // -----------------------------------------------------------------------------
     cr_osc0_frequency = uvm_reg_field::type_id::create("cr_osc0_frequency");
     cr_osc0_frequency.configure(
