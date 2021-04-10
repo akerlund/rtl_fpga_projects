@@ -22,7 +22,7 @@
 #define BASE_ADDRESSES_H
 
   // Physical Address of the FPGA's AXI Configuration Bus
-  #define CFG_BASE_ADDR_C  0x000000000
+  #define CFG_BASE_ADDR_C  0x43C00000
 
   // Base Addresses of the Slaves
   #define DAFX_BASE_ADDRESS_C  0x000000
