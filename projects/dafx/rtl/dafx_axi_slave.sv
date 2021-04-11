@@ -98,7 +98,10 @@ module dafx_axi_slave #(
       cif.bvalid  <= '0;
       cif.bresp   <= '0;
       cr_mix_output_gain      <= 1<<Q_BITS_C;
-      cr_mix_channel_gain     <= 1<<Q_BITS_C;
+      cr_mix_channel_gain[0]  <= 1<<Q_BITS_C;
+      cr_mix_channel_gain[1]  <= 1<<Q_BITS_C;
+      cr_mix_channel_gain[2]  <= 1<<Q_BITS_C;
+      cr_mix_channel_gain[3]  <= 1<<Q_BITS_C;
       cr_osc0_waveform_select <= 0;
       cr_osc0_frequency       <= 500<<Q_BITS_C;
       cr_osc0_duty_cycle      <= 500;
@@ -168,19 +171,19 @@ module dafx_axi_slave #(
               end
 
               MIXER_CHANNEL_GAIN_0_ADDR: begin
-                cr_mix_channel_gain <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+                cr_mix_channel_gain[0] <= cif.wdata[GAIN_WIDTH_C-1 : 0];
               end
 
               MIXER_CHANNEL_GAIN_1_ADDR: begin
-                cr_mix_channel_gain <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+                cr_mix_channel_gain[1] <= cif.wdata[GAIN_WIDTH_C-1 : 0];
               end
 
               MIXER_CHANNEL_GAIN_2_ADDR: begin
-                cr_mix_channel_gain <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+                cr_mix_channel_gain[2] <= cif.wdata[GAIN_WIDTH_C-1 : 0];
               end
 
               MIXER_CHANNEL_GAIN_3_ADDR: begin
-                cr_mix_channel_gain <= cif.wdata[GAIN_WIDTH_C-1 : 0];
+                cr_mix_channel_gain[3] <= cif.wdata[GAIN_WIDTH_C-1 : 0];
               end
 
               OSC0_WAVEFORM_SELECT_ADDR: begin

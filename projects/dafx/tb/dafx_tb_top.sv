@@ -31,7 +31,7 @@ module dafx_tb_top;
   clk_rst_if                    clk_rst_vif1();
   vip_axi4_if  #(VIP_MEM_CFG_C) mem_vif(clk_rst_vif0.clk, clk_rst_vif0.rst_n);
   vip_axi4_if  #(VIP_REG_CFG_C) reg_vif(clk_rst_vif0.clk, clk_rst_vif0.rst_n);
-  vip_axi4s_if #(VIP_CIR_CFG_C) cir_vif(clk_rst_vif1.clk, clk_rst_vif0.rst_n);
+  vip_axi4s_if #(VIP_CIR_CFG_C) cir_vif(clk_rst_vif0.clk, clk_rst_vif0.rst_n);
 
   axi4_reg_if  #(
     .AXI4_ID_WIDTH_P   ( VIP_REG_CFG_C.VIP_AXI4_ID_WIDTH_P   ),

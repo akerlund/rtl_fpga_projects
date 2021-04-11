@@ -20,6 +20,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+#define FPGA_BASEADDR      0x43C00000
 #include <stdio.h>
 #include "xil_printf.h"
 #include "xscugic.h"
@@ -34,7 +35,6 @@
 
 
 // Constants
-#define FPGA_BASEADDR      0x43C00000
 #define UART_BUFFER_SIZE_C 256
 
 // UART
@@ -253,11 +253,11 @@ void handle_rx_data(uint8_t *buffer) {
     addr = vector_get_uint32(buffer, &index);
     data = vector_get_uint32(buffer, &index);
     xil_printf("%cINFO [rx] waddr(%u) wdata(%u)\r", STR_C, addr, data);
-    axi_write(addr, data);
+    axi_write(CFG_BASE_ADDR_C+addr, data);
 
   } else if (rx_buffer[0] == 'R' && rx_length == 5) {
     addr = vector_get_uint32(buffer, &index);
-    data = axi_read(addr);
+    data = axi_read(CFG_BASE_ADDR_C+addr);
     xil_printf("%cINFO [rx] raddr(%u) rdata(%d)\r", STR_C, addr, data);
 
   } else {
