@@ -26,32 +26,35 @@ module dafx_axi_slave #(
     parameter int AUDIO_WIDTH_C = -1,
     parameter int AXI_ADDR_WIDTH_P = -1,
     parameter int AXI_DATA_WIDTH_P = -1,
-    parameter int AXI_ID_P = -1,
     parameter int GAIN_WIDTH_C = -1,
     parameter int N_BITS_C = -1,
     parameter int Q_BITS_C = -1
   )(
     axi4_reg_if.slave cif,
-    input  wire                      [63 : 0] sr_hardware_version,
-    output logic         [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
-    output logic [3 : 0] [GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain,
-    output logic                      [1 : 0] cr_osc0_waveform_select,
-    output logic             [N_BITS_C-1 : 0] cr_osc0_frequency,
-    output logic             [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
-    output logic                              cr_cpu_led0,
-    output logic                              cr_cpu_led1,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
-    output logic                              cmd_clear_adc_amplitude,
-    output logic                              cmd_clear_irq_0,
-    output logic                              cmd_clear_irq_1,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
-    input  wire         [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
+    input  wire                     [63 : 0] sr_hardware_version,
+    output logic        [GAIN_WIDTH_C-1 : 0] cr_mix_output_gain,
+    output logic [3 : 0][GAIN_WIDTH_C-1 : 0] cr_mix_channel_gain,
+    output logic                     [1 : 0] cr_osc0_waveform_select,
+    output logic            [N_BITS_C-1 : 0] cr_osc0_frequency,
+    output logic            [N_BITS_C-1 : 0] cr_osc0_duty_cycle,
+    output logic                             cr_cpu_led0,
+    output logic                             cr_cpu_led1,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_cir_min_adc_amplitude,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_cir_max_adc_amplitude,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_cir_min_dac_amplitude,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_cir_max_dac_amplitude,
+    output logic                             cmd_clear_adc_amplitude,
+    output logic                             cmd_clear_irq_0,
+    output logic                             cmd_clear_irq_1,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_mix_out_left,
+    input  wire        [AUDIO_WIDTH_C-1 : 0] sr_mix_out_right
   );
 
-  localparam logic [1 : 0] AXI_RESP_SLVERR_C = 2'b01;
+  // Response codes
+  localparam logic [1 : 0] AXI_RESP_OK_C     = 2'b00;
+  localparam logic [1 : 0] AXI_RESP_EXOK_C   = 2'b01;
+  localparam logic [1 : 0] AXI_RESP_SLVERR_C = 2'b10;
+  localparam logic [1 : 0] AXI_RESP_DECERR_C = 2'b11;
 
   // ---------------------------------------------------------------------------
   // Internal signals
@@ -75,15 +78,14 @@ module dafx_axi_slave #(
   read_state_t read_state;
 
   logic [AXI_ADDR_WIDTH_P-1 : 0] araddr_r0;
+  logic                  [7 : 0] arlen_c0;
   logic                  [7 : 0] arlen_r0;
+  logic [AXI_DATA_WIDTH_P-1 : 0] rdata_c0;
+  logic                  [1 : 0] rresp_c0;
 
 
 
-  // ---------------------------------------------------------------------------
-  // Port assignments
-  // ---------------------------------------------------------------------------
 
-  assign cif.rid = AXI_ID_P;
 
   // ---------------------------------------------------------------------------
   // Write processes
@@ -95,6 +97,7 @@ module dafx_axi_slave #(
       awaddr_r0   <= '0;
       cif.awready <= '0;
       cif.wready  <= '0;
+      cif.bid     <= '0;
       cif.bvalid  <= '0;
       cif.bresp   <= '0;
       cr_mix_output_gain      <= 1<<Q_BITS_C;
@@ -129,9 +132,10 @@ module dafx_axi_slave #(
 
           cif.awready <= '1;
 
-          if (cif.awvalid) begin
+          if (cif.awvalid && cif.awready) begin
             write_state <= WAIT_MST_WLAST_E;
             cif.awready <= '0;
+            cif.bid     <= cif.awid;
             awaddr_r0   <= cif.awaddr;
             cif.wready  <= '1;
           end
@@ -199,7 +203,8 @@ module dafx_axi_slave #(
               end
 
               CPU_LED_ADDR: begin
-                {cr_cpu_led1, cr_cpu_led0} <= cif.wdata;
+                cr_cpu_led0 <= cif.wdata[0];
+                cr_cpu_led1 <= cif.wdata[1];
               end
 
               CLEAR_ADC_AMPLITUDE_ADDR: begin
@@ -232,7 +237,30 @@ module dafx_axi_slave #(
   // Read process
   // ---------------------------------------------------------------------------
 
-  assign cif.rlast = (arlen_r0 == '0);
+  assign cif.rlast = cif.rvalid && arlen_r0 == '0;
+
+
+
+  always_comb begin
+    arlen_c0 = arlen_r0;
+
+    case (read_state)
+      WAIT_MST_ARVALID_E: begin
+        if (cif.arvalid && cif.arready) begin
+          arlen_c0 = cif.arlen;
+        end
+      end
+
+      WAIT_SLV_RLAST_E: begin
+        if (cif.rready && cif.rvalid) begin
+          if (arlen_r0 != '0) begin
+            arlen_c0 = arlen_r0 - 1;
+          end
+        end
+      end
+    endcase
+  end
+
 
   // FSM
   always_ff @(posedge cif.clk or negedge cif.rst_n) begin
@@ -242,10 +270,16 @@ module dafx_axi_slave #(
       cif.arready <= '0;
       araddr_r0   <= '0;
       arlen_r0    <= '0;
+      cif.rid     <= '0;
+      cif.rdata   <= '0;
+      cif.rresp   <= '0;
       cif.rvalid  <= '0;
 
     end
     else begin
+
+
+      arlen_r0 <= arlen_c0;
 
       case (read_state)
 
@@ -257,32 +291,34 @@ module dafx_axi_slave #(
 
           cif.arready <= '1;
 
-          if (cif.arvalid) begin
+          if (cif.arvalid && cif.arready) begin
             read_state  <= WAIT_SLV_RLAST_E;
             araddr_r0   <= cif.araddr;
-            arlen_r0    <= cif.arlen;
+            cif.rid     <= cif.arid;
             cif.arready <= '0;
-            cif.rvalid  <= '1;
+
+
           end
 
         end
 
         WAIT_SLV_RLAST_E: begin
 
+          cif.rvalid <= '1;
+          cif.rdata  <= rdata_c0;
+          cif.rresp  <= rresp_c0;
 
-          if (cif.rready) begin
+          if (cif.rready && cif.rvalid) begin
             araddr_r0 <= araddr_r0 + (AXI_DATA_WIDTH_P/8);
           end
 
-          if (cif.rlast && cif.rready) begin
+          if (cif.rvalid && cif.rready && cif.rlast) begin
             read_state  <= WAIT_MST_ARVALID_E;
             cif.arready <= '1;
             cif.rvalid  <= '0;
           end
 
-          if (arlen_r0 != '0) begin
-            arlen_r0 <= arlen_r0 - 1;
-          end
+
 
         end
       endcase
@@ -290,85 +326,97 @@ module dafx_axi_slave #(
   end
 
 
+
   always_comb begin
 
-    cif.rdata = '0;
-    cif.rresp = '0;
+    rdata_c0 = '0;
+    rresp_c0 = '0;
 
 
     case (araddr_r0)
 
       HARDWARE_VERSION_ADDR: begin
-        cif.rdata[63 : 0] = sr_hardware_version;
+        rdata_c0[63 : 0] = sr_hardware_version;
       end
 
       MIXER_OUTPUT_GAIN_ADDR: begin
-        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_output_gain;
+        rdata_c0[GAIN_WIDTH_C-1 : 0] = cr_mix_output_gain;
       end
 
       MIXER_CHANNEL_GAIN_0_ADDR: begin
-        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[0];
+        rdata_c0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[0];
       end
 
       MIXER_CHANNEL_GAIN_1_ADDR: begin
-        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[1];
+        rdata_c0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[1];
       end
 
       MIXER_CHANNEL_GAIN_2_ADDR: begin
-        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[2];
+        rdata_c0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[2];
       end
 
       MIXER_CHANNEL_GAIN_3_ADDR: begin
-        cif.rdata[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[3];
+        rdata_c0[GAIN_WIDTH_C-1 : 0] = cr_mix_channel_gain[3];
       end
 
       OSC0_WAVEFORM_SELECT_ADDR: begin
-        cif.rdata[1 : 0] = cr_osc0_waveform_select;
+        rdata_c0[1 : 0] = cr_osc0_waveform_select;
       end
 
       OSC0_FREQUENCY_ADDR: begin
-        cif.rdata[N_BITS_C-1 : 0] = cr_osc0_frequency;
+        rdata_c0[N_BITS_C-1 : 0] = cr_osc0_frequency;
       end
 
       OSC0_DUTY_CYCLE_ADDR: begin
-        cif.rdata[N_BITS_C-1 : 0] = cr_osc0_duty_cycle;
+        rdata_c0[N_BITS_C-1 : 0] = cr_osc0_duty_cycle;
       end
 
       CPU_LED_ADDR: begin
-        cif.rdata = {cr_cpu_led1, cr_cpu_led0};
+        rdata_c0[0] = cr_cpu_led0;
+        rdata_c0[1] = cr_cpu_led1;
       end
 
       CIR_MIN_ADC_AMPLITUDE_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_adc_amplitude;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_adc_amplitude;
       end
 
       CIR_MAX_ADC_AMPLITUDE_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_adc_amplitude;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_adc_amplitude;
       end
 
       CIR_MIN_DAC_AMPLITUDE_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_dac_amplitude;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_cir_min_dac_amplitude;
       end
 
       CIR_MAX_DAC_AMPLITUDE_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_dac_amplitude;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_cir_max_dac_amplitude;
       end
 
       MIX_OUT_LEFT_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_left;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_left;
       end
 
       MIX_OUT_RIGHT_ADDR: begin
-        cif.rdata[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_right;
+        rdata_c0[AUDIO_WIDTH_C-1 : 0] = sr_mix_out_right;
       end
 
 
       default: begin
-        cif.rresp = AXI_RESP_SLVERR_C;
-        cif.rdata = '0;
+        rresp_c0 = AXI_RESP_SLVERR_C;
+        rdata_c0 = '0;
       end
 
     endcase
+  end
+
+  // Read Clear retiming
+  always_ff @(posedge cif.clk or negedge cif.rst_n) begin
+    if (!cif.rst_n) begin
+
+    end
+    else begin
+
+    end
   end
 
 endmodule

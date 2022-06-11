@@ -3,9 +3,12 @@ dafx:
 
   bus_width: 64
 
-  rtl_path: "$GIT_ROOT/projects/dafx/rtl"
-  uvm_path: "$GIT_ROOT/projects/dafx/tb/uvm_reg"
-  sw_path:  "$GIT_ROOT/projects/dafx/sw"
+  rtl_paths:
+    - "$GIT_ROOT/projects/dafx/rtl"
+  uvm_paths:
+    - "$GIT_ROOT/projects/dafx/tb/uvm_reg"
+  sw_paths:
+    - "$GIT_ROOT/projects/dafx/sw"
 
   parameters:
     - GAIN_WIDTH_C

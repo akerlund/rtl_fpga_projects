@@ -80,6 +80,7 @@ module dafx_top #(
     // -------------------------------------------------------------------------
 
     // Write Address Channel
+    input  wire        [CFG_ID_WIDTH_C-1 : 0] cfg_awid,
     input  wire      [CFG_ADDR_WIDTH_P-1 : 0] cfg_awaddr,
     input  wire                               cfg_awvalid,
     output logic                              cfg_awready,
@@ -92,17 +93,20 @@ module dafx_top #(
     output logic                              cfg_wready,
 
     // Write Response Channel
+    output logic       [CFG_ID_WIDTH_C-1 : 0] cfg_bid,
     output logic                      [1 : 0] cfg_bresp,
     output logic                              cfg_bvalid,
     input  wire                               cfg_bready,
 
     // Read Address Channel
+    input  wire        [CFG_ID_WIDTH_C-1 : 0] cfg_arid,
     input  wire      [CFG_ADDR_WIDTH_P-1 : 0] cfg_araddr,
     input  wire                       [7 : 0] cfg_arlen,
     input  wire                               cfg_arvalid,
     output logic                              cfg_arready,
 
     // Read Data Channel
+    output logic       [CFG_ID_WIDTH_C-1 : 0] cfg_rid,
     output logic     [CFG_DATA_WIDTH_P-1 : 0] cfg_rdata,
     output logic                      [1 : 0] cfg_rresp,
     output logic                              cfg_rlast,
@@ -192,6 +196,7 @@ module dafx_top #(
   ) dafx_cfg_if (clk, rst_n);
 
   // Write Address Channel
+  assign dafx_cfg_if.awid    = cfg_awid;
   assign dafx_cfg_if.awaddr  = cfg_awaddr;
   assign dafx_cfg_if.awvalid = cfg_awvalid;
   assign cfg_awready = dafx_cfg_if.awready;
@@ -204,17 +209,20 @@ module dafx_top #(
   assign cfg_wready  = dafx_cfg_if.wready;
 
   // Write Response Channel
+  assign cfg_bid     = dafx_cfg_if.bid;
   assign cfg_bresp   = dafx_cfg_if.bresp;
   assign cfg_bvalid  = dafx_cfg_if.bvalid;
   assign dafx_cfg_if.bready  = cfg_bready;
 
   // Read Address Channel
+  assign dafx_cfg_if.arid    = cfg_arid;
   assign dafx_cfg_if.araddr  = cfg_araddr;
   assign dafx_cfg_if.arlen   = cfg_arlen;
   assign dafx_cfg_if.arvalid = cfg_arvalid;
   assign cfg_arready = dafx_cfg_if.arready;
 
   // Read Data Channel
+  assign cfg_rid     = dafx_cfg_if.rid;
   assign cfg_rdata   = dafx_cfg_if.rdata;
   assign cfg_rresp   = dafx_cfg_if.rresp;
   assign cfg_rlast   = dafx_cfg_if.rlast;
